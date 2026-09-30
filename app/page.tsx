@@ -1,60 +1,67 @@
-import { createClient } from '@/app/supabase/server'
-import { cookies } from 'next/headers'
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { AuthControls } from "@/app/auth/auth-controls";
+import { createClient } from "@/app/supabase/server";
 
 export default async function Page() {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
-
-  const { data: customers, error } = await supabase
-    .from('customers')
-    .select('*')
-  
-  if(error) {
-    console.error(error)
-    return <p>Error loading customers: {error.message}</p>
-  }
-
-  if (!customers?.length) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8 text-center">
-        <p>
-          Connected to Supabase, but no customers are visible to this app.
-          Check Row Level Security policies or confirm your env vars point to
-          the same Supabase project.
-        </p>
-      </main>
-    )
-  }
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-8">
-      <div className="mx-auto max-w-6xl overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="bg-zinc-100 text-zinc-700">
-            <tr>
-              <th className="border-b border-zinc-200 px-4 py-3 font-semibold">Index</th>
-              <th className="border-b border-zinc-200 px-4 py-3 font-semibold">Customer ID</th>
-              <th className="border-b border-zinc-200 px-4 py-3 font-semibold">First Name</th>
-              <th className="border-b border-zinc-200 px-4 py-3 font-semibold">Last Name</th>
-              <th className="border-b border-zinc-200 px-4 py-3 font-semibold">Company</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 text-zinc-900">
-            {customers.map((customer) => (
-              <tr
-                key={customer['Customer Id'] ?? customer.Index}
-                className="transition-colors hover:bg-zinc-50"
-              >
-                <td className="px-4 py-3">{customer.Index}</td>
-                <td className="px-4 py-3 font-mono text-xs">{customer['Customer Id']}</td>
-                <td className="px-4 py-3">{customer['First Name']}</td>
-                <td className="px-4 py-3">{customer['Last Name']}</td>
-                <td className="px-4 py-3">{customer.Company}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <main className="min-h-screen bg-zinc-50 px-6 py-12 text-zinc-950">
+      <section className="mx-auto w-full max-w-2xl space-y-8">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-zinc-500">
+            The Humour Project
+          </p>
+          <h1 className="text-3xl font-semibold tracking-normal">
+            User profiles with Supabase Auth
+          </h1>
+          <p className="text-base leading-7 text-zinc-600">
+            Sign in with Google to create and manage your profile. Profile
+            photos will be stored privately in Supabase Storage.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+          {user ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-zinc-500">Signed in as</p>
+                <p className="break-all font-medium">{user.email}</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/profile"
+                  className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+                >
+                  Edit Profile
+                </Link>
+                <Link
+                  href="/protected"
+                  className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100"
+                >
+                  Protected Page
+                </Link>
+                <AuthControls isSignedIn />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium">You are signed out.</p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Continue with Google to start your profile.
+                </p>
+              </div>
+              <AuthControls isSignedIn={false} />
+            </div>
+          )}
+        </div>
+      </section>
     </main>
-  )
+  );
 }
