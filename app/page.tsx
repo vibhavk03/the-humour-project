@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { AuthControls } from "@/app/auth/auth-controls";
 import { createClient } from "@/app/supabase/server";
+import { UploadForm } from "@/app/posts/upload-form";
 
 export default async function Page() {
   const cookieStore = await cookies();
@@ -61,6 +62,7 @@ export default async function Page() {
             </div>
           )}
         </div>
+        {user ? <UploadForm /> : null}
       </section>
     </main>
   );

@@ -36,6 +36,25 @@ After running the SQL, refresh Supabase's API schema cache:
 select pg_notify('pgrst', 'reload schema');
 ```
 
+## Image Uploads and Posts
+
+Run `supabase/posts.sql` separately in the Supabase SQL Editor. It creates the
+`posts` table, ownership-based RLS, a newest-first per-user feed index, and a private
+`post-images` bucket with owner-only access. Existing profile setup is unchanged.
+
+Signed-in users can upload an image and optional context from the home page.
+`POST /api/posts` validates the session, file type/signature, 5 MB size limit, and
+1,000-character context limit, then stores the image and post. Caption, generation
+prompt/version, and model are nullable until AI captioning is added. If saving the
+post fails, the endpoint attempts to remove the uploaded object.
+
+Image moderation is not implemented. The endpoint has an explicit insertion point
+after validation and before storage for a future moderation step.
+
+To verify after applying SQL: sign in, upload an image with and without context,
+and check the `posts` table and `post-images` bucket. Confirm signed-out requests
+receive 401 and another user cannot read the saved row or stored image.
+
 ## Supabase Auth Setup
 
 In Supabase, go to **Authentication > URL Configuration**.
