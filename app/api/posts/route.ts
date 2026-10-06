@@ -1,12 +1,16 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/app/supabase/server";
+import { CaptionError, generateCaption } from "@/app/posts/generate-caption";
 import {
   IMAGE_EXTENSIONS,
   MAX_CONTEXT_LENGTH,
   matchesImageType,
   validateImage,
 } from "@/app/posts/upload-validation";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const supabase = createClient(await cookies());
@@ -47,6 +51,9 @@ export async function POST(request: Request) {
 
   // Future image moderation belongs here, before storage or caption generation.
   // No moderation is performed in this version.
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: "Caption generation is not configured yet." }, { status: 503 });
+  }
   const postId = crypto.randomUUID();
   const imagePath = `${user.id}/${postId}.${IMAGE_EXTENSIONS[image.type]}`;
   const bucket = supabase.storage.from("post-images");
@@ -59,12 +66,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image could not be uploaded. Please try again." }, { status: 500 });
   }
 
+  let generated: Awaited<ReturnType<typeof generateCaption>>;
+  try {
+    generated = await generateCaption(bytes, image.type, context);
+  } catch (error) {
+    const { error: cleanupError } = await bucket.remove([imagePath]);
+    if (cleanupError) console.error("Post image cleanup failed:", cleanupError);
+    return NextResponse.json(
+      {
+        error: error instanceof CaptionError ? error.message : "Caption generation failed. Please try again.",
+        code: error instanceof CaptionError ? error.code : "caption_generation_failed",
+        retryAfterSeconds: error instanceof CaptionError ? error.retryAfterSeconds : undefined,
+      },
+      {
+        status: error instanceof CaptionError ? error.status : 502,
+        headers: error instanceof CaptionError && error.retryAfterSeconds
+          ? { "Retry-After": String(error.retryAfterSeconds) } : undefined,
+      },
+    );
+  }
+
   const { data: post, error: saveError } = await supabase.from("posts").insert({
     id: postId,
     user_id: user.id,
     image_path: imagePath,
     context: context || null,
-  }).select("id, context, created_at").single();
+    ...generated,
+  }).select("id, context, caption, created_at").single();
 
   if (saveError) {
     const { error: cleanupError } = await bucket.remove([imagePath]);
@@ -73,5 +101,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Post could not be saved. Please try again." }, { status: 500 });
   }
 
-  return NextResponse.json({ message: "Image and context saved.", post }, { status: 201 });
+  return NextResponse.json({ message: "Image and caption saved.", post }, { status: 201 });
 }

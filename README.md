@@ -44,9 +44,27 @@ Run `supabase/posts.sql` separately in the Supabase SQL Editor. It creates the
 
 Signed-in users can upload an image and optional context from the home page.
 `POST /api/posts` validates the session, file type/signature, 5 MB size limit, and
-1,000-character context limit, then stores the image and post. Caption, generation
-prompt/version, and model are nullable until AI captioning is added. If saving the
-post fails, the endpoint attempts to remove the uploaded object.
+1,000-character context limit, then uploads the image, generates a caption, and
+saves the post with the caption, full persona prompt, prompt version, and model.
+Generation uses one server-side OpenAI Responses API call containing the actual
+image (base64 input) and optional context. The bucket remains private. If caption
+generation or saving the post fails, the endpoint attempts to remove the upload.
+
+Add `OPENAI_API_KEY` to `.env.local` and your deployment's server environment.
+Never use a `NEXT_PUBLIC_` prefix for this key. `OPENAI_CAPTION_MODEL` optionally
+overrides the default `gpt-4.1-mini` with another Responses-compatible model that
+accepts image inputs. Restart the development server after changing environment
+variables. No new SQL is needed if `supabase/posts.sql` has already been applied;
+older uploads retain null captions.
+
+The prompt in `app/posts/caption-prompt.ts` uses Sam's Columbia/Midwest/NYC persona,
+image-specific observational humor, and a limit of 25 words / 200 characters.
+The form displays the latest saved caption next to its image. PNG, JPEG, and WEBP
+are accepted for caption generation; GIFs are excluded. Requests share a 45-second
+OpenAI deadline across at most three attempts. Only confirmed temporary limits
+are retried, with backoff and `Retry-After` respected; delays over five seconds
+are returned to the caller. Quota/billing errors are not retried. The OpenAI response uses `store: false`.
+This setting does not change OpenAI's other data-retention policies.
 
 Image moderation is not implemented. The endpoint has an explicit insertion point
 after validation and before storage for a future moderation step.
@@ -122,6 +140,7 @@ http://localhost:3000
 
 ```bash
 npm run lint
+npm run test:captions
 npx next build --webpack
 ```
 

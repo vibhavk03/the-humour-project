@@ -19,11 +19,11 @@ export default async function Page() {
             The Humour Project
           </p>
           <h1 className="text-3xl font-semibold tracking-normal">
-            User profiles with Supabase Auth
+            Your camera roll has jokes
           </h1>
           <p className="text-base leading-7 text-zinc-600">
-            Sign in with Google to create and manage your profile. Profile
-            photos will be stored privately in Supabase Storage.
+            Turn dorm moments and city adventures into short, funny captions.
+            Sign in with Google, add an image, and let us find the punchline.
           </p>
         </div>
 
