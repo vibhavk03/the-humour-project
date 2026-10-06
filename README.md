@@ -42,7 +42,12 @@ Run `supabase/posts.sql` separately in the Supabase SQL Editor. It creates the
 `posts` table, ownership-based RLS, a newest-first per-user feed index, and a private
 `post-images` bucket with owner-only access. Existing profile setup is unchanged.
 
-Signed-in users can upload an image and optional context from the home page.
+The top navigation separates Feed (`/`) and Generate (`/generate`). Signed-in
+users can upload an image and optional context from Generate. Feed shows only the
+signed-in user's saved images, captions, context, and dates, newest first, with
+12 posts per page. Private images use one-hour signed URLs generated server-side.
+Older uploads without captions are still shown with a placeholder. New saves
+invalidate the feed, and the result includes a link to view it there.
 `POST /api/posts` validates the session, file type/signature, 5 MB size limit, and
 1,000-character context limit, then uploads the image, generates a caption, and
 saves the post with the caption, full persona prompt, prompt version, and model.
@@ -70,7 +75,7 @@ Image moderation is not implemented. The endpoint has an explicit insertion poin
 after validation and before storage for a future moderation step.
 
 To verify after applying SQL: sign in, upload an image with and without context,
-and check the `posts` table and `post-images` bucket. Confirm signed-out requests
+from Generate and check the feed, `posts` table, and `post-images` bucket. Confirm signed-out requests
 receive 401 and another user cannot read the saved row or stored image.
 
 ## Supabase Auth Setup

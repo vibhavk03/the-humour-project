@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { ACCEPTED_IMAGE_TYPES, MAX_CONTEXT_LENGTH, validateImage } from "./upload-validation";
 
 export function UploadForm() {
@@ -124,6 +125,7 @@ export function UploadForm() {
             <img src={savedPreview} alt="Image for your generated caption" className="max-h-80 w-full rounded-md object-contain" />
           ) : null}
           <p className="text-lg font-medium text-zinc-950">{savedCaption}</p>
+          <Link href="/" prefetch={false} className="inline-block text-sm font-medium underline underline-offset-4">View in your feed</Link>
         </section>
       ) : null}
     </form>

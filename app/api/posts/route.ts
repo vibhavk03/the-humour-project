@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { createClient } from "@/app/supabase/server";
 import { CaptionError, generateCaption } from "@/app/posts/generate-caption";
@@ -101,5 +102,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Post could not be saved. Please try again." }, { status: 500 });
   }
 
+  revalidatePath("/");
   return NextResponse.json({ message: "Image and caption saved.", post }, { status: 201 });
 }

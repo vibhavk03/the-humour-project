@@ -22,6 +22,7 @@ const service = load("app/posts/generate-caption.ts", {
   "server-only": {}, "./caption-prompt": prompt,
 });
 const validation = load("app/posts/upload-validation.ts");
+const { getUserFeed } = load("app/posts/feed-data.ts", { "server-only": {} });
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 const caption = "This latte and my degree have the same financing plan.";
 const originalFetch = global.fetch;
@@ -68,6 +69,7 @@ const client = {
 };
 const { POST } = load("app/api/posts/route.ts", {
   "next/headers": { cookies: async () => ({}) },
+  "next/cache": { revalidatePath: () => {} },
   "@/app/supabase/server": { createClient: () => client },
   "@/app/posts/generate-caption": service,
   "@/app/posts/upload-validation": validation,
@@ -85,6 +87,58 @@ function completed(text = caption) {
 }
 
 async function run() {
+  let queriedUser;
+  let queriedRange;
+  const ordering = [];
+  let signedPaths;
+  let feedError = null;
+  let imageError = null;
+  let feedRows = Array.from({ length: 13 }, (_, index) => ({
+    id: String(index), image_path: `test-user/${index}.png`, caption: index ? "A caption" : null,
+    context: null, created_at: "2026-10-05T12:00:00Z",
+  }));
+  const query = {
+    select: () => query,
+    eq: (field, value) => { assert.equal(field, "user_id"); queriedUser = value; return query; },
+    order: (field, options) => { ordering.push([field, options.ascending]); return query; },
+    range: (start, end) => { queriedRange = [start, end]; return query; },
+    returns: async () => ({ data: feedRows, error: feedError }),
+  };
+  const feedClient = {
+    from: table => { assert.equal(table, "posts"); return query; },
+    storage: { from: bucket => {
+      assert.equal(bucket, "post-images");
+      return { createSignedUrls: async (paths, lifetime) => {
+        signedPaths = paths;
+        assert.equal(lifetime, 3600);
+        return { data: imageError ? null : paths.map(path => ({ path, signedUrl: `https://test.invalid/${path}` })), error: imageError };
+      } };
+    } },
+  };
+  let feed = await getUserFeed(feedClient, "test-user", 1);
+  assert.equal(queriedUser, "test-user");
+  assert.deepEqual(queriedRange, [0, 12]);
+  assert.deepEqual(ordering, [["created_at", false], ["id", false]]);
+  assert.equal(feed.posts.length, 12);
+  assert.equal(feed.hasNext, true);
+  assert.equal(signedPaths.length, 12);
+  assert.equal(feed.posts[0].caption, null, "Keep older uploads without captions");
+  assert.equal(feed.posts[0].signedImageUrl, "https://test.invalid/test-user/0.png");
+  feedRows = [];
+  feed = await getUserFeed(feedClient, "test-user", 2);
+  assert.deepEqual(queriedRange, [12, 24]);
+  assert.equal(feed.hasNext, false);
+  assert.equal(feed.posts.length, 0);
+  feedError = { code: "test_feed_failure" };
+  assert.equal((await getUserFeed(feedClient, "test-user", 1)).error, true);
+  feedError = null;
+  feedRows = [{ id: "1", image_path: "test-user/1.png", caption: "Saved caption", context: null, created_at: "2026-10-05T12:00:00Z" }];
+  imageError = { name: "test_image_failure" };
+  feed = await getUserFeed(feedClient, "test-user", 1);
+  assert.equal(feed.posts[0].signedImageUrl, null);
+  assert.equal(feed.posts[0].caption, "Saved caption", "Image failure should preserve the caption");
+  console.log("Passed feed checks: user filter, newest-first ordering, pagination, private image signing, legacy posts, and error handling.");
+
   process.env.OPENAI_API_KEY = "test-key";
   delete process.env.OPENAI_CAPTION_MODEL;
   providerBody = completed();
