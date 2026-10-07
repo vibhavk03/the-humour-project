@@ -93,7 +93,8 @@ export function UploadForm() {
           className="block w-full text-sm text-zinc-700 file:mr-4 file:rounded-md file:border-0 file:bg-zinc-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800"
         />
       </label>
-      <p id="image-help" className="text-sm text-zinc-500">PNG, JPG, or WEBP. Maximum 5 MB. Your image is sent to OpenAI to generate a caption and saved privately.</p>
+      <p id="image-help" className="text-sm text-zinc-500">PNG, JPG, or WEBP. Maximum 5 MB. Your image is sent to OpenAI to generate a caption.</p>
+      <p className="rounded-md bg-zinc-100 px-3 py-2 text-sm text-zinc-700">Your image and caption will be shared with everyone in the app. Your optional context stays private.</p>
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="Selected image preview" className="max-h-80 w-full rounded-md border border-zinc-200 object-contain" />
@@ -125,7 +126,7 @@ export function UploadForm() {
             <img src={savedPreview} alt="Image for your generated caption" className="max-h-80 w-full rounded-md object-contain" />
           ) : null}
           <p className="text-lg font-medium text-zinc-950">{savedCaption}</p>
-          <Link href="/" prefetch={false} className="inline-block text-sm font-medium underline underline-offset-4">View in your feed</Link>
+          <Link href="/your-posts" prefetch={false} className="inline-block text-sm font-medium underline underline-offset-4">View in Your Posts</Link>
         </section>
       ) : null}
     </form>

@@ -22,7 +22,8 @@ const service = load("app/posts/generate-caption.ts", {
   "server-only": {}, "./caption-prompt": prompt,
 });
 const validation = load("app/posts/upload-validation.ts");
-const { getUserFeed } = load("app/posts/feed-data.ts", { "server-only": {} });
+const heartData = load("app/posts/heart-data.ts", { "server-only": {} });
+const { getUserFeed, getHomeFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./heart-data": heartData });
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 const caption = "This latte and my degree have the same financing plan.";
 const originalFetch = global.fetch;
@@ -87,25 +88,92 @@ function completed(text = caption) {
 }
 
 async function run() {
+  const heartPostId = "12345678-1234-1234-1234-123456789012";
+  let heartUser = "user-a";
+  let heartVisible = true;
+  let heartWriteFails = false;
+  const voters = new Set();
+  const heartClient = {
+    auth: { getUser: async () => ({ data: { user: heartUser ? { id: heartUser } : null }, error: null }) },
+    from: table => {
+      if (table === "home_feed") {
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: heartVisible ? { id: heartPostId } : null, error: null }) }) }) };
+      }
+      assert.equal(table, "post_hearts");
+      return {
+        upsert: async (row, options) => {
+          assert.equal(row.post_id, heartPostId);
+          assert.equal(row.user_id, heartUser);
+          assert.equal(options.ignoreDuplicates, true);
+          if (!heartWriteFails) voters.add(row.user_id);
+          return { error: heartWriteFails ? { code: "test_write_failure" } : null };
+        },
+        delete: () => ({ eq(field, value) {
+          if (field === "post_id") { assert.equal(value, heartPostId); return this; }
+          assert.equal(field, "user_id");
+          assert.equal(value, heartUser);
+          voters.delete(value);
+          return Promise.resolve({ error: null });
+        } }),
+      };
+    },
+    rpc: (name, args) => {
+      assert.equal(name, "get_post_hearts");
+      assert.deepEqual(args.post_ids, [heartPostId]);
+      return { single: async () => ({ data: { heart_count: voters.size, hearted: voters.has(heartUser) }, error: null }) };
+    },
+  };
+  const heartRoute = load("app/api/posts/[id]/heart/route.ts", {
+    "next/headers": { cookies: async () => ({}) },
+    "next/cache": { revalidatePath: () => {} },
+    "@/app/supabase/server": { createClient: () => heartClient },
+  });
+  const heartContext = { params: Promise.resolve({ id: heartPostId }) };
+  const heartRequest = new Request("http://localhost/api/posts/heart", { method: "PUT", body: JSON.stringify({ user_id: "spoofed-user" }) });
+  assert.deepEqual(await (await heartRoute.PUT(heartRequest, heartContext)).json(), { hearted: true, count: 1 });
+  assert.deepEqual(await (await heartRoute.PUT(heartRequest, heartContext)).json(), { hearted: true, count: 1 });
+  heartUser = "user-b";
+  assert.deepEqual(await (await heartRoute.PUT(heartRequest, heartContext)).json(), { hearted: true, count: 2 });
+  assert.deepEqual(await (await heartRoute.DELETE(heartRequest, heartContext)).json(), { hearted: false, count: 1 });
+  assert.deepEqual(await (await heartRoute.DELETE(heartRequest, heartContext)).json(), { hearted: false, count: 1 });
+  assert.ok(voters.has("user-a"), "Removing a heart must not affect another user");
+  heartUser = null;
+  assert.equal((await heartRoute.PUT(heartRequest, heartContext)).status, 401);
+  heartUser = "user-a";
+  assert.equal((await heartRoute.PUT(heartRequest, { params: Promise.resolve({ id: "invalid" }) })).status, 400);
+  heartVisible = false;
+  assert.equal((await heartRoute.PUT(heartRequest, heartContext)).status, 404);
+  heartVisible = true;
+  heartWriteFails = true;
+  assert.equal((await heartRoute.PUT(heartRequest, heartContext)).status, 500);
+  console.log("Passed heart checks: authentication, visibility, idempotent add/remove, one heart per user, counts, ownership, and write failures.");
+
   let queriedUser;
+  let queriedTable;
+  let selectedFields;
   let queriedRange;
   const ordering = [];
   let signedPaths;
   let feedError = null;
   let imageError = null;
+  let heartsError = null;
   let feedRows = Array.from({ length: 13 }, (_, index) => ({
-    id: String(index), image_path: `test-user/${index}.png`, caption: index ? "A caption" : null,
+    id: String(index), user_id: "test-user", image_path: `test-user/${index}.png`, caption: index ? "A caption" : null,
     context: null, created_at: "2026-10-05T12:00:00Z",
   }));
   const query = {
-    select: () => query,
+    select: fields => { selectedFields = fields; return query; },
     eq: (field, value) => { assert.equal(field, "user_id"); queriedUser = value; return query; },
     order: (field, options) => { ordering.push([field, options.ascending]); return query; },
     range: (start, end) => { queriedRange = [start, end]; return query; },
     returns: async () => ({ data: feedRows, error: feedError }),
   };
   const feedClient = {
-    from: table => { assert.equal(table, "posts"); return query; },
+    rpc: async (name, args) => {
+      assert.equal(name, "get_post_hearts");
+      return { data: args.post_ids.map(post_id => ({ post_id, heart_count: 2, hearted: true })), error: heartsError };
+    },
+    from: table => { queriedTable = table; return query; },
     storage: { from: bucket => {
       assert.equal(bucket, "post-images");
       return { createSignedUrls: async (paths, lifetime) => {
@@ -117,12 +185,17 @@ async function run() {
   };
   let feed = await getUserFeed(feedClient, "test-user", 1);
   assert.equal(queriedUser, "test-user");
+  assert.equal(queriedTable, "posts");
+  assert.ok(selectedFields.includes("context"));
   assert.deepEqual(queriedRange, [0, 12]);
   assert.deepEqual(ordering, [["created_at", false], ["id", false]]);
   assert.equal(feed.posts.length, 12);
   assert.equal(feed.hasNext, true);
   assert.equal(signedPaths.length, 12);
   assert.equal(feed.posts[0].caption, null, "Keep older uploads without captions");
+  assert.equal(feed.posts[0].heartsAvailable, false);
+  assert.equal(feed.posts[1].heartCount, 2);
+  assert.equal(feed.posts[1].hearted, true);
   assert.equal(feed.posts[0].signedImageUrl, "https://test.invalid/test-user/0.png");
   feedRows = [];
   feed = await getUserFeed(feedClient, "test-user", 2);
@@ -137,7 +210,30 @@ async function run() {
   feed = await getUserFeed(feedClient, "test-user", 1);
   assert.equal(feed.posts[0].signedImageUrl, null);
   assert.equal(feed.posts[0].caption, "Saved caption", "Image failure should preserve the caption");
-  console.log("Passed feed checks: user filter, newest-first ordering, pagination, private image signing, legacy posts, and error handling.");
+  imageError = null;
+  queriedUser = undefined;
+  feedRows = [
+    { id: "own", user_id: "test-user", image_path: "test-user/own.png", caption: "Own caption", context: "Private context", created_at: "2026-10-05T12:00:00Z" },
+    { id: "other", user_id: "another-user", image_path: "another-user/other.png", caption: "Another caption", created_at: "2026-10-05T11:00:00Z" },
+  ];
+  feed = await getHomeFeed(feedClient, 1);
+  assert.equal(queriedTable, "home_feed", "Community reads must use the restricted view");
+  assert.equal(queriedUser, undefined, "Home Feed must not filter to the current user");
+  assert.equal(selectedFields.includes("context"), false);
+  assert.equal(selectedFields.includes("generation_prompt"), false);
+  assert.equal(feed.posts.length, 2);
+  assert.equal(feed.posts[0].context, null, "Never expose private context in the community result");
+  assert.equal(feed.posts[1].context, null);
+  assert.equal(feed.posts[1].signedImageUrl, "https://test.invalid/another-user/other.png");
+  feed = await getUserFeed(feedClient, "test-user", 1);
+  assert.equal(queriedTable, "posts");
+  assert.equal(queriedUser, "test-user");
+  assert.equal(feed.posts[0].context, "Private context");
+  heartsError = { code: "missing_migration" };
+  feed = await getUserFeed(feedClient, "test-user", 1);
+  assert.equal(feed.error, false, "A missing hearts migration must not break the feed");
+  assert.equal(feed.posts[0].heartsAvailable, false);
+  console.log("Passed feed checks: personal user filter, community view, context privacy, newest-first ordering, pagination, signed images, legacy posts, and errors.");
 
   process.env.OPENAI_API_KEY = "test-key";
   delete process.env.OPENAI_CAPTION_MODEL;

@@ -22,10 +22,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
             The Humour Project
           </p>
           <h1 className="text-3xl font-semibold tracking-normal">
-            Your feed
+            Home Feed
           </h1>
           <p className="text-base leading-7 text-zinc-600">
-            Your camera roll, with a punchline. Browse your saved images and captions, newest first.
+            Everyone&apos;s camera roll, with a punchline. Browse the community&apos;s generated images and captions, newest first.
           </p>
         </div>
 
@@ -57,14 +57,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
               <div>
                 <p className="font-medium">You are signed out.</p>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Sign in with Google to see your images and captions.
+                  Sign in with Google to browse the community feed.
                 </p>
               </div>
               <AuthControls isSignedIn={false} />
             </div>
           )}
         </div>
-        {user ? <Feed supabase={supabase} userId={user.id} page={page} /> : null}
+        {user ? <Feed supabase={supabase} userId={user.id} page={page} scope="home" /> : null}
       </section>
     </main>
   );

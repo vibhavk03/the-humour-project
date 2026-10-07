@@ -42,12 +42,20 @@ Run `supabase/posts.sql` separately in the Supabase SQL Editor. It creates the
 `posts` table, ownership-based RLS, a newest-first per-user feed index, and a private
 `post-images` bucket with owner-only access. Existing profile setup is unchanged.
 
-The top navigation separates Feed (`/`) and Generate (`/generate`). Signed-in
-users can upload an image and optional context from Generate. Feed shows only the
-signed-in user's saved images, captions, context, and dates, newest first, with
-12 posts per page. Private images use one-hour signed URLs generated server-side.
-Older uploads without captions are still shown with a placeholder. New saves
-invalidate the feed, and the result includes a link to view it there.
+After running `posts.sql`, run **`supabase/shared-feed.sql`** in the SQL Editor to
+enable community reads. It adds a restricted `home_feed` view, a newest-first
+community index, and a storage read policy for images belonging to generated posts.
+Base `posts` RLS remains owner-only so context and generation metadata stay private.
+The bucket stays private, and upload/update/delete permissions remain owner-only.
+
+The top navigation has Home Feed (`/`), Your Posts (`/your-posts`), and Generate
+(`/generate`). Home Feed is available to signed-in users and shows everyone's
+generated image-caption posts, including older generated posts, newest first.
+Every successful generation is automatically shared. Your Posts shows only the
+current user's uploads, including optional context and older uploads without
+captions. Both feeds have 12 posts per page and one-hour signed image URLs.
+New saves invalidate both feeds. Generate explains that images and captions are
+shared while optional context stays private.
 `POST /api/posts` validates the session, file type/signature, 5 MB size limit, and
 1,000-character context limit, then uploads the image, generates a caption, and
 saves the post with the caption, full persona prompt, prompt version, and model.
@@ -75,8 +83,21 @@ Image moderation is not implemented. The endpoint has an explicit insertion poin
 after validation and before storage for a future moderation step.
 
 To verify after applying SQL: sign in, upload an image with and without context,
-from Generate and check the feed, `posts` table, and `post-images` bucket. Confirm signed-out requests
-receive 401 and another user cannot read the saved row or stored image.
+from Generate and check both feeds, `posts` table, and `post-images` bucket.
+Using two accounts, confirm each sees both users' generated posts in Home Feed,
+only its own posts/context in Your Posts, and cannot change another user's posts
+or images. Signed-out uploads return 401 and cannot read the shared view or images.
+
+## Post Hearts
+
+Run `supabase/post-hearts.sql` after `posts.sql` and `shared-feed.sql`. It creates
+`post_hearts` with one heart per user/post and ownership-based RLS, plus an RPC
+returning aggregate counts and the current user's heart state. Other users' heart
+rows remain private. Heart counts/buttons appear on generated posts in both feeds.
+Click again to remove your heart. Signed-in users may also heart their own posts.
+PUT and DELETE `/api/posts/[id]/heart` are idempotent and validate authentication
+and post visibility. If the migration is missing, posts still load and hearts show
+as unavailable. Verify persistence across refreshes and counts across two accounts.
 
 ## Supabase Auth Setup
 

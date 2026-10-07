@@ -103,5 +103,6 @@ export async function POST(request: Request) {
   }
 
   revalidatePath("/");
+  revalidatePath("/your-posts");
   return NextResponse.json({ message: "Image and caption saved.", post }, { status: 201 });
 }
