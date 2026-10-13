@@ -44,7 +44,7 @@ export function HeartButton({ postId, initialCount, initialHearted, available }:
         disabled={isSaving || !available}
         aria-pressed={hearted}
         aria-label={available ? `${hearted ? "Remove heart from" : "Heart"} this post, ${count} ${count === 1 ? "heart" : "hearts"}` : "Hearts unavailable"}
-        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${hearted ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100" : "border-zinc-200 text-zinc-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"}`}
+        className="comic-reaction inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill={hearted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
           <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />

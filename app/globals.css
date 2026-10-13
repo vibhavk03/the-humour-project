@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff8ed;
+  --foreground: #660033;
 }
 
 @theme inline {
@@ -10,17 +10,293 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-paper: #fff8ed;
+  --color-card: #fffdfa;
+  --color-ink: #660033;
+  --color-muted: #84536a;
+  --color-ink-soft: #d2b2be;
+  --color-pink: #e673ac;
+  --color-pink-light: #fbe0ed;
+  --color-grass: #469110;
+  --color-forest: #00520a;
+  --color-green-light: #eaf3dc;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection { background: #e673ac; color: #660033; }
+:focus-visible { outline: 3px solid #660033; outline-offset: 4px; }
+input[type="radio"] { accent-color: #660033; }
+
+@layer components {
+  .comic-page {
+    min-height: calc(100svh - 100px);
+    padding: 2rem 1.5rem 4rem;
+    background-image: radial-gradient(#6600332e 1px, transparent 1px);
+    background-size: 9px 9px;
+  }
+  .comic-header {
+    position: relative;
+    border-bottom: 3px solid #660033;
+    background: #fffdfa;
+  }
+  .comic-header::before {
+    content: "";
+    display: block;
+    height: 7px;
+    background: linear-gradient(to right, #660033 0% 25%, #e673ac 25% 50%, #469110 50% 75%, #00520a 75%);
+  }
+  .comic-brand {
+    font-family: Impact, "Arial Black", sans-serif;
+    font-size: clamp(1.15rem, 3.5vw, 1.75rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .comic-heading {
+    font-family: Impact, "Arial Black", sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+  .comic-intro {
+    position: relative;
+    isolation: isolate;
+    padding: 0.5rem 0 0.75rem;
+  }
+  .comic-intro::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: 0;
+    top: 0;
+    width: 110px;
+    height: 110px;
+    background: radial-gradient(#e673ac 2px, transparent 2px) 0 0 / 8px 8px;
+    background-color: #fff8ed;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .comic-eyebrow {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.25rem 0.6rem;
+    border: 2px solid #660033;
+    background: #eaf3dc;
+    color: #00520a;
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 #660033;
+    transform: rotate(-1deg);
+  }
+  .comic-title {
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: 1rem;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    line-height: 1.05;
+    text-shadow: 2px 2px 0 #e673ac;
+  }
+  .comic-intro-compact .comic-title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 0.5rem;
+  }
+  .comic-intro-compact .comic-eyebrow { margin-bottom: 0.65rem; }
+  .comic-intro-compact::after { width: 96px; height: 96px; }
+  .comic-feed-image { height: clamp(11rem, 26svh, 16rem); }
+  .comic-feed-card .comic-caption { padding: 0.75rem; font-size: 1rem; line-height: 1.5; }
+  .comic-panel {
+    border: 2px solid #660033;
+    border-radius: 3px;
+    background: #fffdfa;
+    box-shadow: 5px 5px 0 #660033;
+  }
+  .comic-nav { display: flex; gap: 0.5rem; padding: 0.6rem; }
+  .comic-tab {
+    flex: 1;
+    border: 2px solid transparent;
+    border-radius: 2px;
+    padding: 0.7rem 0.3rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 800;
+    transition: background-color 150ms, box-shadow 150ms;
+  }
+  .comic-tab:hover { background: #fbe0ed; }
+  .comic-tab[aria-current="page"] { border-color: #660033; background: #e673ac; box-shadow: 2px 2px 0 #660033; }
+  .comic-tab[aria-current="page"]:hover { background: #f3a3ca; box-shadow: 3px 3px 0 #660033; }
+  .comic-tab-create { color: #00520a; background: #eaf3dc; }
+  .comic-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #660033;
+    border-radius: 3px;
+    padding: 0.6rem 1rem;
+    background: #e673ac;
+    color: #660033;
+    font-size: 0.875rem;
+    font-weight: 800;
+    box-shadow: 3px 3px 0 #660033;
+    cursor: pointer;
+    transition: transform 150ms, box-shadow 150ms, background-color 150ms;
+  }
+  .comic-button:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #660033; }
+  .comic-button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #660033; }
+  .comic-button:disabled { cursor: not-allowed; opacity: 0.5; box-shadow: none; }
+  .comic-button-secondary { background: #fffdfa; }
+  .comic-button-post { background: #00520a; color: #fffdfa; }
+  .comic-button-danger { background: #660033; color: #fffdfa; }
+  .comic-field {
+    width: 100%;
+    border: 2px solid #d2b2be;
+    border-radius: 3px;
+    background: #fffdfa;
+    padding: 0.65rem 0.75rem;
+    color: #660033;
+    font-size: 0.875rem;
+  }
+  .comic-field::placeholder { color: #84536a; }
+  .comic-field:focus { border-color: #660033; outline: 2px solid #e673ac; outline-offset: 2px; }
+  .comic-file::file-selector-button {
+    margin-right: 1rem;
+    padding: 0.55rem 0.8rem;
+    border: 2px solid #660033;
+    border-radius: 3px;
+    background: #fbe0ed;
+    color: #660033;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .comic-file:disabled::file-selector-button { opacity: 0.5; cursor: not-allowed; }
+  .comic-caption {
+    position: relative;
+    border: 2px solid #660033;
+    background: #fff8ed;
+    padding: 1rem;
+    font-size: 1.125rem;
+    font-weight: 650;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .comic-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1rem;
+    border: 2px solid #660033;
+    border-radius: 3px;
+    background: #fffdfa;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    transition: background-color 150ms, box-shadow 150ms;
+  }
+  .comic-choice:hover { background: #fbe0ed; }
+  .comic-choice:has(input:checked) { background: #e673ac; box-shadow: 4px 4px 0 #660033; }
+  .comic-choice:has(input:focus-visible) { outline: 3px solid #00520a; outline-offset: 4px; }
+  fieldset:disabled .comic-choice { cursor: wait; }
+  .comic-stamp {
+    display: inline-block;
+    border: 1.5px solid #660033;
+    padding: 0.2rem 0.5rem;
+    background: #eaf3dc;
+    color: #00520a;
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .comic-account { border: 2px solid #660033; background: #fffdfa; box-shadow: 2px 2px 0 #660033; }
+  .comic-reaction { border: 2px solid #660033; background: #fffdfa; color: #660033; }
+  .comic-reaction[aria-pressed="true"] { background: #e673ac; }
+  .comic-reaction:hover:not(:disabled) { background: #e673ac; }
+  .comic-reaction[aria-pressed="true"]:hover:not(:disabled) { background: #660033; color: #fffdfa; }
+  .landing-page { padding-top: 3.5rem; }
+  .landing-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 5rem);
+    padding-bottom: 4rem;
+  }
+  .landing-title {
+    font-size: clamp(2.8rem, 5.2vw, 4.75rem);
+    line-height: 1.03;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  .landing-title span { text-shadow: 3px 3px 0 #e673ac; }
+  .landing-example { overflow: hidden; transform: rotate(1deg); }
+  .landing-illustration { background: #eaf3dc; }
+  .landing-how { scroll-margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #d2b2be; }
+  .landing-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border: 2px solid #660033;
+    background: #fbe0ed;
+    font-size: 1.5rem;
+    box-shadow: 2px 2px 0 #660033;
+  }
+  .landing-step:nth-child(2) .landing-step-number { background: #eaf3dc; }
+  .landing-step:nth-child(3) .landing-step-number { background: #e673ac; }
+  .landing-community {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 2rem;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: #eaf3dc;
+  }
+  .landing-sharing-note { padding: 1.25rem; border: 2px dashed #00520a; background: #fffdfa; }
+}
+
+@media (max-width: 767px) {
+  .landing-page { padding-top: 2rem; }
+  .landing-hero { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; padding-bottom: 3rem; }
+  .landing-example { width: 100%; max-width: 32rem; justify-self: center; transform: none; }
+  .landing-community { grid-template-columns: minmax(0, 1fr); padding: 1.5rem; }
+}
+
+@keyframes comic-card-wobble {
+  0% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-3px) rotate(-0.6deg); }
+  50% { transform: translateY(-3px) rotate(0.6deg); }
+  75% { transform: translateY(-3px) rotate(-0.3deg); }
+  100% { transform: translateY(-3px) rotate(0); }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .comic-feed-card { transition: transform 180ms ease, box-shadow 180ms ease; }
+  .comic-feed-card:hover {
+    animation: comic-card-wobble 450ms ease-out;
+    transform: translateY(-3px);
+    box-shadow: 7px 8px 0 #660033;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+
+@media (max-width: 380px) {
+  .comic-page { padding-inline: 1rem; }
+  .comic-tab { font-size: 0.75rem; }
+  .comic-header { padding-inline: 1rem; }
+}
+
+@media (max-width: 639px) {
+  .comic-intro::after { display: none; }
 }

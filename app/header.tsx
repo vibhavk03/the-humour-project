@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "./supabase/server";
 import { AccountMenu } from "./auth/account-menu";
 import { AuthControls } from "./auth/auth-controls";
+import { HeaderWidth } from "./header-width";
 
 export async function Header() {
   const supabase = createClient(await cookies());
@@ -21,11 +22,11 @@ export async function Header() {
   }
 
   return (
-    <header className="border-b border-zinc-200 bg-white px-6 text-zinc-950">
-      <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 py-4">
-        <Link href="/" className="text-sm font-semibold sm:text-base">The Humour Project</Link>
+    <header className="comic-header px-6 text-ink">
+      <HeaderWidth>
+        <Link href="/" className="comic-brand"><span className="block">The Humour Project</span><span className="mt-1 block font-mono text-[0.6rem] font-medium tracking-[0.15em] text-muted">CAMPUS LIFE. COMIC RELIEF.</span></Link>
         {user ? <AccountMenu key={user.id} name={name} email={user.email ?? ""} photoUrl={photoUrl} /> : <AuthControls isSignedIn={false} />}
-      </div>
+      </HeaderWidth>
     </header>
   );
 }

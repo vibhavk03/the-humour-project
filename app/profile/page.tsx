@@ -1,3 +1,4 @@
+import { PageIntro } from "@/app/page-intro";
 import { Navigation } from "@/app/navigation";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -44,15 +45,11 @@ export default async function ProfilePage() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-12 text-zinc-950">
-      <section className="mx-auto w-full max-w-2xl space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-normal">Profile</h1>
-          <p className="text-base leading-7 text-zinc-600">
-            Add your first and last name. A profile photo is optional and stays
-            in private Supabase Storage.
-          </p>
-        </div>
+    <main className="comic-page">
+      <section className="mx-auto w-full max-w-3xl space-y-6">
+        <PageIntro title="Your Profile" eyebrow="Meet the person behind the panels">
+          Add your name and an optional profile photo. Every good comic has a main character.
+        </PageIntro>
 
         <Navigation />
         <ProfileForm initialProfile={formData} />

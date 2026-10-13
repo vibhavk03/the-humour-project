@@ -9,9 +9,14 @@ create index if not exists posts_shared_created_at_idx
 -- Only the listed shared fields are exposed; never add context or prompt here.
 create or replace view public.home_feed
 with (security_barrier = true, security_invoker = false) as
-select id, user_id, image_path, caption, created_at
+select posts.id, posts.user_id, posts.image_path, posts.caption, posts.created_at,
+  nullif(trim(concat_ws(' ',
+    nullif(trim(profiles.first_name), ''),
+    nullif(trim(profiles.last_name), '')
+  )), '') as author_name
 from public.posts
-where caption is not null and (select auth.uid()) is not null;
+left join public.profiles on profiles.id = posts.user_id
+where posts.caption is not null and (select auth.uid()) is not null;
 
 revoke all on public.home_feed from public, anon, authenticated;
 grant select on public.home_feed to authenticated;

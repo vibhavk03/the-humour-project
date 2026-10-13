@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/app/supabase/client";
 
 type AuthControlsProps = {
   isSignedIn: boolean;
+  signInLabel?: string;
 };
 
-export function AuthControls({ isSignedIn }: AuthControlsProps) {
-  const router = useRouter();
+export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google" }: AuthControlsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -47,8 +46,8 @@ export function AuthControls({ isSignedIn }: AuthControlsProps) {
       return;
     }
 
-    router.refresh();
-    setIsLoading(false);
+    // Reload the landing page with the cleared session, including its header.
+    window.location.replace("/");
   }
 
   return (
@@ -57,16 +56,16 @@ export function AuthControls({ isSignedIn }: AuthControlsProps) {
         type="button"
         onClick={isSignedIn ? signOut : signIn}
         disabled={isLoading}
-        className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        className="comic-button"
       >
         {isLoading
           ? "Working..."
           : isSignedIn
             ? "Sign Out"
-            : "Sign In with Google"}
+            : signInLabel}
       </button>
 
-      {message ? <p className="text-sm text-red-600">{message}</p> : null}
+      {message ? <p role="alert" className="text-sm text-red-600">{message}</p> : null}
     </div>
   );
 }

@@ -14,6 +14,7 @@ export type FeedPost = {
   heartCount: number;
   hearted: boolean;
   heartsAvailable: boolean;
+  authorName: string | null;
 };
 
 export async function getUserFeed(supabase: SupabaseClient, userId: string, page: number) {
@@ -27,8 +28,8 @@ export async function getHomeFeed(supabase: SupabaseClient, page: number) {
 async function getFeed(supabase: SupabaseClient, page: number, userId?: string) {
   const start = (page - 1) * FEED_PAGE_SIZE;
   // Cross-user reads go through a restricted view, not broader posts RLS.
-  let query = supabase.from(userId ? "posts" : "home_feed")
-    .select(userId ? "id, user_id, image_path, context, caption, created_at" : "id, user_id, image_path, caption, created_at");
+  let query = supabase.from(userId ? "user_feed" : "home_feed")
+    .select(userId ? "id, user_id, image_path, context, caption, created_at, authorName:author_name" : "id, user_id, image_path, caption, created_at, authorName:author_name");
   if (userId) query = query.eq("user_id", userId);
   const { data, error } = await query
     .order("created_at", { ascending: false })
@@ -52,6 +53,7 @@ async function getFeed(supabase: SupabaseClient, page: number, userId?: string) 
   return {
     posts: visible.map(post => ({
       ...post, context: userId ? post.context : null,
+      authorName: post.authorName ?? null,
       signedImageUrl: urls.get(post.image_path) || null,
       heartCount: Number(hearts?.get(post.id)?.heart_count ?? 0),
       hearted: hearts?.get(post.id)?.hearted ?? false,

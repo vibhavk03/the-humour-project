@@ -33,20 +33,30 @@ export function DeletePostButton({ postId }: { postId: string }) {
     }
   }
 
-  if (deleted) return <p role="status" className="text-sm text-zinc-500">Post deleted.</p>;
+  if (deleted) return <p role="status" className="text-sm text-muted">Post deleted.</p>;
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 max-w-xs space-y-2">
       {confirming ? (
         <div className="space-y-3 rounded-md border border-red-200 bg-red-50 p-3">
           <p className="text-sm text-red-800">Delete this post? This cannot be undone.</p>
-          <div className="flex gap-3">
-            <button type="button" onClick={deletePost} disabled={deleting} className="rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50">{deleting ? "Deleting..." : "Delete permanently"}</button>
-            <button type="button" onClick={() => { setConfirming(false); setError(""); }} disabled={deleting} className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-50">Cancel</button>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={deletePost} disabled={deleting} className="comic-button comic-button-danger">{deleting ? "Deleting..." : "Delete permanently"}</button>
+            <button type="button" onClick={() => { setConfirming(false); setError(""); }} disabled={deleting} className="comic-button comic-button-secondary">Cancel</button>
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setConfirming(true)} className="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium text-red-700 hover:border-red-200 hover:bg-red-50">Delete post</button>
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          aria-label="Delete post"
+          title="Delete post"
+          className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink-soft text-ink transition-colors hover:border-ink hover:bg-pink-light"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5" />
+          </svg>
+        </button>
       )}
       {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
     </div>

@@ -103,13 +103,9 @@ export function UploadForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Give your image a punchline</h2>
-        <p className="text-sm text-zinc-600">A dorm moment, a weekend adventure, or something only New York could explain.</p>
-      </div>
-      <label className="block space-y-2 text-sm font-medium text-zinc-800">
-        <span>Image</span>
+    <form onSubmit={handleSubmit} className="comic-panel space-y-5 p-5 sm:p-7">
+      <label className="block space-y-2 text-sm font-medium text-ink">
+        <span className="block text-base font-semibold">Upload your photo</span>
         <input
           ref={fileInput}
           type="file"
@@ -127,62 +123,73 @@ export function UploadForm() {
             setPreview(file && !validationError ? URL.createObjectURL(file) : null);
             setImage(validationError ? null : file);
           }}
-          className="block w-full text-sm text-zinc-700 file:mr-4 file:rounded-md file:border-0 file:bg-zinc-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800"
+          className="comic-file block w-full text-sm text-ink"
         />
+        <span id="image-help" className="block text-xs font-normal text-muted">PNG, JPG or WEBP · Up to 5 MB</span>
       </label>
-      <p id="image-help" className="text-sm text-zinc-500">PNG, JPG, or WEBP. Maximum 5 MB. Your image is sent to OpenAI to generate caption choices.</p>
-      <p className="rounded-md bg-zinc-100 px-3 py-2 text-sm text-zinc-700">Review your captions before posting. Only your image and chosen caption will be shared with everyone in the app. Your optional context stays private.</p>
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt="Selected image preview" className="max-h-80 w-full rounded-md border border-zinc-200 object-contain" />
+        <img src={preview} alt="Selected image preview" className="max-h-80 w-full rounded-md border border-ink-soft object-contain" />
       ) : null}
-      <label className="block space-y-2 text-sm font-medium text-zinc-800">
-        <span>Context (optional)</span>
-        <textarea
-          value={context}
-          onChange={(event) => { setContext(event.target.value); setChoices([]); setSelected(""); }}
-          maxLength={MAX_CONTEXT_LENGTH}
-          disabled={busy}
-          rows={3}
-          placeholder="e.g. My first time taking the subway downtown after a week of midterms."
-          aria-describedby="context-help"
-          className="w-full resize-y rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-950"
-        />
-      </label>
-      <p id="context-help" className="text-sm text-zinc-500">{context.length}/{MAX_CONTEXT_LENGTH} characters</p>
+      <details className="border-t border-ink-soft pt-4">
+        <summary className="w-fit cursor-pointer text-sm font-medium text-ink">Add context <span className="font-normal text-muted">(optional)</span></summary>
+        <div className="mt-3 space-y-2">
+          <label className="block space-y-2 text-sm font-medium text-ink">
+          <span className="sr-only">Context (optional)</span>
+          <textarea
+            value={context}
+            onChange={(event) => { setContext(event.target.value); setChoices([]); setSelected(""); }}
+            maxLength={MAX_CONTEXT_LENGTH}
+            disabled={busy}
+            rows={2}
+            placeholder="e.g. First subway ride after a week of midterms."
+            aria-describedby="context-help"
+            className="comic-field"
+          />
+        </label>
+        <p id="context-help" className="flex flex-wrap justify-between gap-2 text-xs text-muted"><span>A little backstory helps shape the joke.</span><span>{context.length}/{MAX_CONTEXT_LENGTH}</span></p>
+        </div>
+      </details>
       {error ? <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-      {success ? <p role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p> : null}
+      {success ? <p role="status" className="rounded-md border border-forest bg-green-light px-3 py-2 text-sm text-forest">{success}</p> : null}
       {choices.length ? (
-        <section aria-label="Review captions" className="space-y-4 border-t border-zinc-200 pt-5">
+        <section aria-label="Review captions" className="space-y-4 border-t border-ink-soft pt-5">
           <fieldset disabled={busy} className="space-y-3">
-            <legend className="mb-2 text-xl font-semibold">Choose your caption</legend>
-            <p className="text-sm text-zinc-600">Pick your favorite, or request three more options. Nothing is posted until you choose Post to feed.</p>
+            <legend className="mb-2 comic-heading text-2xl">Choose your caption</legend>
+            <p className="text-sm text-muted">Pick a favorite, or request three more.</p>
             {choices.map((choice, index) => (
-              <label key={choice.caption} className={`flex cursor-pointer gap-3 rounded-md border p-4 ${selected === choice.caption ? "border-zinc-950 bg-zinc-50" : "border-zinc-200"}`}>
+              <label key={choice.caption} className="comic-choice">
                 <input type="radio" name="caption" value={choice.caption} checked={selected === choice.caption} onChange={() => setSelected(choice.caption)} className="mt-1" />
-                <span><span className="mb-1 block text-xs text-zinc-500">Option {index + 1}</span>{choice.caption}</span>
+                <span className="min-w-0 flex-1"><span className="mb-2 flex flex-wrap items-center gap-2"><span className="comic-stamp">Take {String(index + 1).padStart(2, "0")}</span>{selected === choice.caption ? <span className="comic-stamp bg-card text-ink">This one!</span> : null}</span><span className="text-base font-medium leading-7">{choice.caption}</span></span>
               </label>
             ))}
           </fieldset>
-          <p role="status" className="text-sm text-zinc-500">{choices.length} captions available{selected ? ". Ready to post your selection." : ". Select one to post."}</p>
+          <p role="status" className="text-sm text-muted">{choices.length} captions available{selected ? ". Ready to post your selection." : ". Select one to post."}</p>
           <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={publish} disabled={busy || !selected} className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400">{isPublishing ? "Posting..." : "Post to feed"}</button>
-            <button type="submit" disabled={busy} className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50">{isUploading ? "Finding more punchlines..." : "Request more captions"}</button>
+            <button type="button" onClick={publish} disabled={busy || !selected} className="comic-button comic-button-post">{isPublishing ? "Posting..." : "Post to feed"}</button>
+            <button type="submit" disabled={busy} className="comic-button comic-button-secondary">{isUploading ? "Finding more punchlines..." : "Request more captions"}</button>
           </div>
         </section>
       ) : (
-        <button type="submit" disabled={busy || !image} className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400">
-          {isUploading ? "Finding the punchlines..." : "Generate 3 captions"}
-        </button>
+        <div className="space-y-3">
+          <button type="submit" disabled={busy || !image} className="comic-button">
+            {isUploading ? "Finding the punchlines..." : "Generate 3 captions"}
+          </button>
+          <p className="text-xs text-muted">You&apos;ll review the captions before anything is posted.</p>
+        </div>
       )}
+      <details className="border-t border-ink-soft pt-3 text-xs text-muted">
+        <summary className="w-fit cursor-pointer hover:text-ink">How your photo is used</summary>
+        <p className="mt-2 max-w-xl leading-6">Your photo and optional context are sent to OpenAI to generate captions. When you choose Post to feed, your photo and selected caption are shared with the community. Your context stays private.</p>
+      </details>
       {savedCaption ? (
-        <section aria-label="Your saved caption" className="space-y-3 border-t border-zinc-200 pt-5">
-          <h3 className="text-sm font-medium text-zinc-500">Your latest caption</h3>
+        <section aria-label="Your saved caption" className="space-y-3 border-t border-ink-soft pt-5">
+          <h3 className="text-sm font-medium text-muted">Your latest caption</h3>
           {savedPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={savedPreview} alt="Image for your generated caption" className="max-h-80 w-full rounded-md object-contain" />
           ) : null}
-          <p className="text-lg font-medium text-zinc-950">{savedCaption}</p>
+          <p className="comic-caption">{savedCaption}</p>
           <Link href="/" prefetch={false} className="mr-4 inline-block text-sm font-medium underline underline-offset-4">View on feed</Link>
           <Link href="/your-posts" prefetch={false} className="inline-block text-sm font-medium underline underline-offset-4">View in Your Posts</Link>
         </section>

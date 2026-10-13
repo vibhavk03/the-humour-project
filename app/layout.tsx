@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "The Humour Project",
-  description: "Your images, with a punchline. Generate captions and browse your saved posts.",
+  description: "Turn everyday photos into funny AI-generated captions. Pick your favorite and share it with the campus community.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

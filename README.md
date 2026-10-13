@@ -100,6 +100,21 @@ Using two accounts, confirm each sees both users' generated posts in Home Feed,
 only its own posts/context in Your Posts, and cannot change another user's posts
 or images. Signed-out uploads return 401 and cannot read the shared view or images.
 
+## Post Author Names
+
+Run `supabase/post-authors.sql` after the profile, post, and shared-feed setup.
+It adds `author_name` to `home_feed` and creates an owner-only `user_feed` view.
+Both join profiles so names arrive in the same query as posts, without separate
+author lookups. Full profiles and profile photos remain owner-only. Both feeds
+display the author's current profile name above the caption, with a Your post
+badge on the current user's cards. Missing names display Campus contributor.
+Apply this migration before running the updated feed code.
+
+Verify with two accounts: each should see the other's name on community posts,
+while direct reads of the other's profile remain blocked. Signed-out users cannot
+read either feed view. Updating a profile name should update attribution on refresh.
+The personal view must only return the signed-in user's posts and context.
+
 ## Post Hearts
 
 Run `supabase/post-hearts.sql` after `posts.sql` and `shared-feed.sql`. It creates

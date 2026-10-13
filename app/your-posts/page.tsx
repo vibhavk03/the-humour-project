@@ -1,3 +1,4 @@
+import { PageIntro } from "@/app/page-intro";
 import { Navigation } from "@/app/navigation";
 import { cookies } from "next/headers";
 import { AuthControls } from "@/app/auth/auth-controls";
@@ -12,16 +13,16 @@ export default async function YourPostsPage({ searchParams }: { searchParams: Pr
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
-      <section className="mx-auto w-full max-w-2xl space-y-6">
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold">Your Posts</h1>
-          <p className="text-base leading-7 text-zinc-600">All your saved images and captions. Your optional context is only visible here.</p>
-        </div>
+    <main className="comic-page">
+      <section className="mx-auto w-full max-w-7xl space-y-5">
+        <PageIntro title="Your Posts" eyebrow="Your personal back issues" compact>
+          Your moments. Your punchlines. All your published posts in one place, with optional context just for you.
+        </PageIntro>
+
         <Navigation />
         {user ? <Feed supabase={supabase} userId={user.id} page={page} /> : (
-          <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-zinc-600">Sign in with Google to see your posts.</p>
+          <div className="comic-panel space-y-4 p-5 sm:p-7">
+            <p className="text-sm text-muted">Sign in with Google to see your posts.</p>
             <AuthControls isSignedIn={false} />
           </div>
         )}
