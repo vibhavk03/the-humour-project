@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import Link from "next/link";
+import { Navigation } from "@/app/navigation";
 import { AuthControls } from "@/app/auth/auth-controls";
 import { createClient } from "@/app/supabase/server";
 import { Feed } from "@/app/posts/feed";
@@ -29,41 +29,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
           </p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-          {user ? (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-zinc-500">Signed in as</p>
-                <p className="break-all font-medium">{user.email}</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/profile"
-                  className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
-                >
-                  Edit Profile
-                </Link>
-                <Link
-                  href="/protected"
-                  className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100"
-                >
-                  Protected Page
-                </Link>
-                <AuthControls isSignedIn />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <p className="font-medium">You are signed out.</p>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Sign in with Google to browse the community feed.
-                </p>
-              </div>
-              <AuthControls isSignedIn={false} />
-            </div>
-          )}
-        </div>
+        <Navigation />
+        {!user ? (
+          <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+            <p className="text-sm text-zinc-600">Sign in with Google to browse the community feed.</p>
+            <AuthControls isSignedIn={false} />
+          </div>
+        ) : null}
         {user ? <Feed supabase={supabase} userId={user.id} page={page} scope="home" /> : null}
       </section>
     </main>

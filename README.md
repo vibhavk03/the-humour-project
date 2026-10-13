@@ -48,8 +48,9 @@ community index, and a storage read policy for images belonging to generated pos
 Base `posts` RLS remains owner-only so context and generation metadata stay private.
 The bucket stays private, and upload/update/delete permissions remain owner-only.
 
-The top navigation has Home Feed (`/`), Your Posts (`/your-posts`), and Generate
-(`/generate`). Home Feed is available to signed-in users and shows everyone's
+The navigation below each page introduction has Home Feed (`/`), Your Posts
+(`/your-posts`), and Generate (`/generate`). The top-right account menu shows the
+user's name/photo and contains their email, Edit Profile, and Sign Out. Home Feed is available to signed-in users and shows everyone's
 generated image-caption posts, including older generated posts, newest first.
 Posts are shared only after the user selects a caption and clicks Post to feed. Your Posts shows only the
 current user's uploads, including optional context and older uploads without

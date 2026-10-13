@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Navigation } from "@/app/navigation";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/supabase/server";
@@ -46,13 +46,6 @@ export default async function ProfilePage() {
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-12 text-zinc-950">
       <section className="mx-auto w-full max-w-2xl space-y-6">
-        <nav className="flex items-center justify-between">
-          <Link href="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-950">
-            The Humour Project
-          </Link>
-          <span className="text-sm text-zinc-500">{user.email}</span>
-        </nav>
-
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-normal">Profile</h1>
           <p className="text-base leading-7 text-zinc-600">
@@ -61,6 +54,7 @@ export default async function ProfilePage() {
           </p>
         </div>
 
+        <Navigation />
         <ProfileForm initialProfile={formData} />
       </section>
     </main>
