@@ -51,7 +51,7 @@ async function waitForRetry(milliseconds: number, signal: AbortSignal) {
   });
 }
 
-export async function generateCaption(bytes: Uint8Array, mimeType: string, context: string) {
+export async function generateCaption(bytes: Uint8Array, mimeType: string, context: string, previousCaptions: string[] = []) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new CaptionError("Caption generation is not configured yet.", 503);
@@ -74,11 +74,12 @@ export async function generateCaption(bytes: Uint8Array, mimeType: string, conte
         input: [{
           role: "user",
           content: [
-            { type: "input_text", text: context ? `Optional image context (source material): ${JSON.stringify(context)}` : "No extra context. Write a caption for this image." },
+            { type: "input_text", text: context ? `Optional image context (source material): ${JSON.stringify(context)}` : "No extra context. Write three captions for this image." },
+            ...(previousCaptions.length ? [{ type: "input_text", text: `Previously offered captions (source material): ${JSON.stringify(previousCaptions)}. Offer three fresh jokes, avoiding these captions.` }] : []),
             { type: "input_image", image_url: `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`, detail: "auto" },
           ],
         }],
-        max_output_tokens: 512,
+        max_output_tokens: 1024,
         store: false,
       }),
       signal,
@@ -143,10 +144,21 @@ export async function generateCaption(bytes: Uint8Array, mimeType: string, conte
   if (content.some(item => item.type === "refusal")) {
     throw new CaptionError("A caption could not be generated for this image. Try another image or context.", 422);
   }
-  const caption = content.filter(item => item.type === "output_text").map(item => item.text ?? "").join("").trim();
-  if (result.status !== "completed" || !caption || caption.length > 200 || caption.split(/\s+/).length > 25 || /[\r\n]/.test(caption)) {
-    throw new CaptionError("The caption service did not return a usable short caption. Please try again.", 502);
+  const text = content.filter(item => item.type === "output_text").map(item => item.text ?? "").join("").trim();
+  let captions: unknown;
+  try {
+    captions = JSON.parse(text).captions;
+  } catch {
+    throw new CaptionError("The caption service returned invalid choices. Please try again.", 502);
   }
-
-  return { caption, generation_prompt: CAPTION_PROMPT, prompt_version: CAPTION_PROMPT_VERSION, model: result.model || model };
+  if (result.status !== "completed" || !Array.isArray(captions) || captions.length !== 3 ||
+    captions.some(caption => typeof caption !== "string" || !caption.trim() || caption.length > 200 || caption.split(/\s+/).length > 25 || /[\r\n]/.test(caption))) {
+    throw new CaptionError("The caption service did not return three usable short captions. Please try again.", 502);
+  }
+  const choices = (captions as string[]).map(caption => caption.trim());
+  const normalized = choices.map(caption => caption.toLowerCase());
+  if (new Set(normalized).size !== 3 || normalized.some(caption => previousCaptions.some(previous => previous.toLowerCase() === caption))) {
+    throw new CaptionError("The caption service repeated a choice. Please request more captions again.", 502);
+  }
+  return { captions: choices, generation_prompt: CAPTION_PROMPT, prompt_version: CAPTION_PROMPT_VERSION, model: result.model || model };
 }

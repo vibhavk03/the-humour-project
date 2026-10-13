@@ -51,17 +51,21 @@ The bucket stays private, and upload/update/delete permissions remain owner-only
 The top navigation has Home Feed (`/`), Your Posts (`/your-posts`), and Generate
 (`/generate`). Home Feed is available to signed-in users and shows everyone's
 generated image-caption posts, including older generated posts, newest first.
-Every successful generation is automatically shared. Your Posts shows only the
+Posts are shared only after the user selects a caption and clicks Post to feed. Your Posts shows only the
 current user's uploads, including optional context and older uploads without
 captions. Both feeds have 12 posts per page and one-hour signed image URLs.
 New saves invalidate both feeds. Generate explains that images and captions are
 shared while optional context stays private.
 `POST /api/posts` validates the session, file type/signature, 5 MB size limit, and
-1,000-character context limit, then uploads the image, generates a caption, and
-saves the post with the caption, full persona prompt, prompt version, and model.
-Generation uses one server-side OpenAI Responses API call containing the actual
-image (base64 input) and optional context. The bucket remains private. If caption
-generation or saving the post fails, the endpoint attempts to remove the upload.
+1,000-character context limit. The default `generate` action returns three distinct
+captions and a signed review token without uploading or saving a post. The review
+screen lets the user select a caption or request three more, keeping earlier choices.
+Each generation uses a server-side OpenAI Responses API call containing the actual
+image (base64 input), optional context, and up to 60 recent choices to avoid repeats.
+The `publish` action verifies the selected caption and the token's user, image,
+context, and 24-hour expiry, then uploads the image and saves the selected caption,
+full persona prompt, prompt version, and model. Publishing does not call OpenAI.
+The bucket remains private. If saving the post fails, the upload is removed.
 
 Add `OPENAI_API_KEY` to `.env.local` and your deployment's server environment.
 Never use a `NEXT_PUBLIC_` prefix for this key. `OPENAI_CAPTION_MODEL` optionally
@@ -83,7 +87,9 @@ Image moderation is not implemented. The endpoint has an explicit insertion poin
 after validation and before storage for a future moderation step.
 
 To verify after applying SQL: sign in, upload an image with and without context,
-from Generate and check both feeds, `posts` table, and `post-images` bucket.
+from Generate. Confirm three choices appear and neither the `posts` table nor
+`post-images` bucket changes before posting. Request more captions, select an
+option from either batch, post it, and check the chosen caption on both feeds.
 Using two accounts, confirm each sees both users' generated posts in Home Feed,
 only its own posts/context in Your Posts, and cannot change another user's posts
 or images. Signed-out uploads return 401 and cannot read the shared view or images.

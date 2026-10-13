@@ -21,11 +21,13 @@ const prompt = load("app/posts/caption-prompt.ts");
 const service = load("app/posts/generate-caption.ts", {
   "server-only": {}, "./caption-prompt": prompt,
 });
+const review = load("app/posts/caption-review.ts", { "server-only": {} });
 const validation = load("app/posts/upload-validation.ts");
 const heartData = load("app/posts/heart-data.ts", { "server-only": {} });
 const { getUserFeed, getHomeFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./heart-data": heartData });
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 const caption = "This latte and my degree have the same financing plan.";
+const captions = [caption, "My coffee has a better financial aid package than I do.", "Studying the receipt counts as economics homework."];
 const originalFetch = global.fetch;
 const originalKey = process.env.OPENAI_API_KEY;
 const originalModel = process.env.OPENAI_CAPTION_MODEL;
@@ -73,15 +75,17 @@ const { POST } = load("app/api/posts/route.ts", {
   "next/cache": { revalidatePath: () => {} },
   "@/app/supabase/server": { createClient: () => client },
   "@/app/posts/generate-caption": service,
+  "@/app/posts/caption-review": review,
   "@/app/posts/upload-validation": validation,
 });
-function request(context) {
+function request(context, fields = {}) {
   const body = new FormData();
   body.set("image", new File([png], "photo.png", { type: "image/png" }));
   if (context !== undefined) body.set("context", context);
+  for (const [key, value] of Object.entries(fields)) body.set(key, value);
   return new Request("http://localhost/api/posts", { method: "POST", body });
 }
-function completed(text = caption) {
+function completed(text = JSON.stringify({ captions })) {
   return { status: "completed", model: "gpt-4.1-mini-test-snapshot", output: [
     { type: "message", content: [{ type: "output_text", text }] },
   ] };
@@ -240,9 +244,9 @@ async function run() {
   providerBody = completed();
   const generated = await service.generateCaption(png, "image/png", "Coffee after midterms");
   assert.equal(calls, 1);
-  assert.equal(generated.caption, caption);
+  assert.deepEqual(generated.captions, captions);
   assert.equal(generated.model, "gpt-4.1-mini-test-snapshot");
-  assert.equal(generated.prompt_version, "sam-v1");
+  assert.equal(generated.prompt_version, "sam-v2");
   assert.equal(payload.instructions, prompt.CAPTION_PROMPT);
   assert.equal(payload.store, false);
   assert.equal(payload.model, "gpt-4.1-mini");
@@ -257,6 +261,13 @@ async function run() {
     providerBody = badBody;
     await assert.rejects(service.generateCaption(png, "image/png", ""), error => error.status === 502);
   }
+  for (const invalid of [[caption], [caption, caption, captions[2]], [caption, 42, captions[2]], [caption, "word ".repeat(26), captions[2]], [caption, "x".repeat(201), captions[2]], [caption, "line one\nline two", captions[2]]]) {
+    providerBody = completed(JSON.stringify({ captions: invalid }));
+    await assert.rejects(service.generateCaption(png, "image/png", ""), error => error.status === 502);
+  }
+  providerBody = completed();
+  await assert.rejects(service.generateCaption(png, "image/png", "", [caption]), error => error.status === 502);
+  assert.ok(payload.input[0].content.some(item => item.text?.includes("Previously offered captions")));
   providerBody = { status: "completed", output: [{ type: "message", content: [{ type: "refusal" }] }] };
   await assert.rejects(service.generateCaption(png, "image/png", ""), error => error.status === 422);
   providerStatus = 429;
@@ -276,7 +287,7 @@ async function run() {
   providerHeaders = { "retry-after": "0" };
   recoverAfterCall = calls + 1;
   const beforeRecovery = calls;
-  assert.equal((await service.generateCaption(png, "image/png", "")).caption, caption);
+  assert.deepEqual((await service.generateCaption(png, "image/png", "")).captions, captions);
   assert.equal(calls, beforeRecovery + 2, "A temporary limit should recover on retry");
   recoverAfterCall = null;
   const beforeExhaustion = calls;
@@ -301,25 +312,56 @@ async function run() {
   process.env.OPENAI_API_KEY = "test-key";
   const callsBeforeSuccess = calls;
   const success = await POST(request("  weekend coffee  "));
-  assert.equal(success.status, 201);
-  assert.equal((await success.json()).post.caption, caption);
+  assert.equal(success.status, 200);
+  const options = await success.json();
+  assert.deepEqual(options.captions, captions);
   assert.equal(calls, callsBeforeSuccess + 1);
+  assert.equal(uploaded, 0, "Review must never upload or publish");
+  assert.equal(inserted, undefined);
+  const publishFields = { action: "publish", reviewToken: options.reviewToken, caption: captions[1] };
+  const published = await POST(request("weekend coffee", publishFields));
+  assert.equal(published.status, 201);
+  assert.equal((await published.json()).post.caption, captions[1]);
+  assert.equal(calls, callsBeforeSuccess + 1, "Publishing must not regenerate captions");
   assert.equal(inserted.context, "weekend coffee");
   assert.equal(inserted.user_id, "test-user");
   assert.equal(inserted.generation_prompt, prompt.CAPTION_PROMPT);
-  assert.equal(inserted.prompt_version, "sam-v1");
-  assert.equal(inserted.caption, caption);
+  assert.equal(inserted.prompt_version, "sam-v2");
   assert.ok(inserted.image_path.startsWith("test-user/"));
-  assert.equal((await POST(request())).status, 201);
-  assert.equal(inserted.context, null);
+  const uploadsBeforeInvalid = uploaded;
+  for (const invalid of [
+    { ...publishFields, caption: "Not a generated choice" },
+    { ...publishFields, reviewToken: options.reviewToken + "tampered" },
+    { action: "publish", caption },
+  ]) assert.equal((await POST(request("weekend coffee", invalid))).status, 400);
+  assert.equal((await POST(request("changed context", publishFields))).status, 400);
+  assert.equal(uploaded, uploadsBeforeInvalid);
+  assert.equal(review.verifyReview(options.reviewToken, "other-user", png, "image/png", "weekend coffee"), null);
+  assert.equal(review.verifyReview(options.reviewToken, "test-user", new Uint8Array([...png, 1]), "image/png", "weekend coffee"), null);
+  const now = Date.now;
+  try {
+    Date.now = () => now() + 25 * 60 * 60 * 1000;
+    assert.equal(review.verifyReview(options.reviewToken, "test-user", png, "image/png", "weekend coffee"), null);
+  } finally { Date.now = now; }
 
+  const noContext = await (await POST(request())).json();
+  assert.equal((await POST(request(undefined, { action: "publish", reviewToken: noContext.reviewToken, caption }))).status, 201);
+  assert.equal(inserted.context, null);
+  const freshCaptions = ["Tuition now includes emotional support espresso.", "My study budget is mostly foam.", "The syllabus said nothing about latte debt."];
+  providerBody = completed(JSON.stringify({ captions: freshCaptions }));
+  const more = await POST(request("weekend coffee", { previousCaptions: JSON.stringify(captions) }));
+  assert.equal(more.status, 200);
+  assert.deepEqual((await more.json()).captions, freshCaptions);
+  assert.ok(payload.input[0].content.some(item => item.text?.includes(caption)));
+  assert.equal(uploaded, uploadsBeforeInvalid + 1, "More captions must not publish");
+  assert.equal((await POST(request("", { previousCaptions: "invalid json" }))).status, 400);
   providerBody = completed("");
   assert.equal((await POST(request())).status, 502);
-  assert.equal(removed, 1);
+  assert.equal(removed, 0, "Generation has no stored files to clean up");
   providerBody = completed();
   saveFails = true;
-  assert.equal((await POST(request())).status, 500);
-  assert.equal(removed, 2);
+  assert.equal((await POST(request("weekend coffee", publishFields))).status, 500);
+  assert.equal(removed, 1);
   saveFails = false;
   providerStatus = 429;
   providerBody = { error: { code: "rate_limit_exceeded" } };
@@ -328,16 +370,16 @@ async function run() {
   assert.equal(rateLimited.status, 429);
   assert.equal(rateLimited.headers.get("retry-after"), "30");
   assert.equal((await rateLimited.json()).code, "openai_rate_limited");
-  assert.equal(removed, 3);
+  assert.equal(removed, 1);
   providerStatus = 200;
   providerBody = completed();
   providerHeaders = {};
   uploadFails = true;
   const callsBeforeUpload = calls;
-  assert.equal((await POST(request())).status, 500);
+  assert.equal((await POST(request("weekend coffee", publishFields))).status, 500);
   assert.equal(calls, callsBeforeUpload);
   assert.ok(validation.validateImage({ type: "image/gif", size: 100 }));
-  console.log("Passed caption checks: image/context payload, single call, prompt/model metadata, output validation, refusal, timeout, rate limit, auth, configuration, persistence, and failure cleanup.");
+  console.log("Passed caption checks: image/context payload, three choices, review without publication, more captions, signed selection, prompt/model metadata, output validation, refusal, timeout, rate limit, auth, configuration, persistence, and failure cleanup.");
 }
 run().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {
   global.fetch = originalFetch;
