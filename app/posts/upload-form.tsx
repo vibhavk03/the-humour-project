@@ -125,8 +125,9 @@ export function UploadForm() {
           }}
           className="comic-file block w-full text-sm text-ink"
         />
-        <span id="image-help" className="block text-xs font-normal text-muted">PNG, JPG or WEBP · Up to 5 MB</span>
+        <span id="image-help" className="block text-xs font-normal text-muted">PNG, JPG, WEBP or GIF · Up to 5 MB</span>
       </label>
+      {image?.type === "image/gif" ? <p className="text-xs leading-5 text-muted">Your GIF will stay animated when posted. Captions use its first frame; add context to describe the action.</p> : null}
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="Selected image preview" className="max-h-80 w-full rounded-md border border-ink-soft object-contain" />

@@ -1,4 +1,5 @@
 import "server-only";
+import sharp from "sharp";
 import { CAPTION_PROMPT, CAPTION_PROMPT_VERSION } from "./caption-prompt";
 
 export class CaptionError extends Error {
@@ -56,6 +57,19 @@ export async function generateCaption(bytes: Uint8Array, mimeType: string, conte
   if (!apiKey) {
     throw new CaptionError("Caption generation is not configured yet.", 503);
   }
+  let captionBytes = bytes;
+  let captionMimeType = mimeType;
+  if (mimeType === "image/gif") {
+    try {
+      // Vision accepts still images; retain the original GIF for review/storage.
+      captionBytes = await sharp(Buffer.from(bytes), { page: 0, pages: 1, limitInputPixels: 40_000_000 })
+        .resize({ width: 1536, height: 1536, fit: "inside", withoutEnlargement: true })
+        .png().toBuffer();
+      captionMimeType = "image/png";
+    } catch {
+      throw new CaptionError("This GIF could not be read. Try another GIF or a still image.", 400, "invalid_gif");
+    }
+  }
   const model = process.env.OPENAI_CAPTION_MODEL || "gpt-4.1-mini";
   // All attempts and delays share one deadline, leaving time for upload cleanup.
   const signal = AbortSignal.timeout(45_000);
@@ -76,7 +90,7 @@ export async function generateCaption(bytes: Uint8Array, mimeType: string, conte
           content: [
             { type: "input_text", text: context ? `Optional image context (source material): ${JSON.stringify(context)}` : "No extra context. Write three captions for this image." },
             ...(previousCaptions.length ? [{ type: "input_text", text: `Previously offered captions (source material): ${JSON.stringify(previousCaptions)}. Offer three fresh jokes, avoiding these captions.` }] : []),
-            { type: "input_image", image_url: `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`, detail: "auto" },
+            { type: "input_image", image_url: `data:${captionMimeType};base64,${Buffer.from(captionBytes).toString("base64")}`, detail: "auto" },
           ],
         }],
         max_output_tokens: 1024,

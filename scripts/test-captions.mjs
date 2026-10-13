@@ -3,12 +3,13 @@ import fs from "node:fs";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import sharp from "sharp";
 
 const loadDependency = createRequire(import.meta.url);
 
 function load(path, imports = {}) {
   const code = ts.transpileModule(fs.readFileSync(path, "utf8"), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
   const compiledModule = { exports: {} };
   new Function("require", "module", "exports", code)(
@@ -56,10 +57,11 @@ let saveFails = false;
 let uploaded = 0;
 let removed = 0;
 let inserted;
+let uploadedImage;
 const client = {
   auth: { getUser: async () => ({ data: { user: signedIn ? { id: "test-user" } : null }, error: null }) },
   storage: { from: () => ({
-    upload: async () => { uploaded++; return { error: uploadFails ? new Error("test upload failure") : null }; },
+    upload: async (path, bytes, options) => { uploaded++; uploadedImage = { path, bytes, options }; return { error: uploadFails ? new Error("test upload failure") : null }; },
     remove: async () => { removed++; return { error: null }; },
   }) },
   from: () => ({ insert: row => {
@@ -256,7 +258,7 @@ async function run() {
   };
   let feed = await getUserFeed(feedClient, "test-user", 1);
   assert.equal(queriedUser, "test-user");
-  assert.equal(queriedTable, "posts");
+  assert.equal(queriedTable, "user_feed");
   assert.ok(selectedFields.includes("context"));
   assert.deepEqual(queriedRange, [0, 12]);
   assert.deepEqual(ordering, [["created_at", false], ["id", false]]);
@@ -297,7 +299,7 @@ async function run() {
   assert.equal(feed.posts[1].context, null);
   assert.equal(feed.posts[1].signedImageUrl, "https://test.invalid/another-user/other.png");
   feed = await getUserFeed(feedClient, "test-user", 1);
-  assert.equal(queriedTable, "posts");
+  assert.equal(queriedTable, "user_feed");
   assert.equal(queriedUser, "test-user");
   assert.equal(feed.posts[0].context, "Private context");
   heartsError = { code: "missing_migration" };
@@ -445,7 +447,51 @@ async function run() {
   const callsBeforeUpload = calls;
   assert.equal((await POST(request("weekend coffee", publishFields))).status, 500);
   assert.equal(calls, callsBeforeUpload);
-  assert.ok(validation.validateImage({ type: "image/gif", size: 100 }));
+  assert.equal(validation.validateImage({ type: "image/gif", size: 100 }), "");
+  assert.ok(validation.validateImage({ type: "image/gif", size: validation.MAX_IMAGE_BYTES + 1 }));
+  for (const header of ["GIF87a", "GIF89a"]) {
+    assert.equal(validation.matchesImageType(Buffer.from(header), "image/gif"), true);
+  }
+  assert.equal(validation.matchesImageType(png, "image/gif"), false);
+
+  uploadFails = false;
+  providerBody = completed();
+  // Two different frames ensure conversion uses only the first, not a tall strip.
+  const pixels = Buffer.from([...Array(4).fill([255, 0, 0]).flat(), ...Array(4).fill([0, 0, 255]).flat()]);
+  const gif = await sharp(pixels, { raw: { width: 2, height: 4, channels: 3, pageHeight: 2 } })
+    .gif({ loop: 0, delay: [100, 100] }).toBuffer();
+  assert.equal((await sharp(gif, { animated: true }).metadata()).pages, 2);
+  const gifFile = new File([gif], "reaction.gif", { type: "image/gif" });
+  const uploadsBeforeGif = uploaded;
+  const gifResponse = await POST(request("A surprised reaction", { image: gifFile }));
+  assert.equal(gifResponse.status, 200);
+  assert.equal(uploaded, uploadsBeforeGif, "Review must not store the GIF yet");
+  const gifReview = await gifResponse.json();
+  const imageUrl = payload.input[0].content.find(item => item.type === "input_image").image_url;
+  assert.ok(imageUrl.startsWith("data:image/png;base64,"));
+  const frame = Buffer.from(imageUrl.split(",")[1], "base64");
+  const frameMetadata = await sharp(frame).metadata();
+  assert.equal(frameMetadata.width, 2);
+  assert.equal(frameMetadata.height, 2);
+  const framePixels = await sharp(frame).removeAlpha().raw().toBuffer();
+  assert.deepEqual([...framePixels.slice(0, 3)], [255, 0, 0]);
+  const callsBeforeGifPublish = calls;
+  const gifPublished = await POST(request("A surprised reaction", {
+    image: gifFile, action: "publish", caption: gifReview.captions[0], reviewToken: gifReview.reviewToken,
+  }));
+  assert.equal(gifPublished.status, 201);
+  assert.equal(calls, callsBeforeGifPublish, "GIF publication must not call OpenAI again");
+  assert.ok(uploadedImage.path.endsWith(".gif"));
+  assert.equal(uploadedImage.options.contentType, "image/gif");
+  assert.deepEqual(Buffer.from(uploadedImage.bytes), gif, "Store the original animated bytes");
+  const callsBeforeInvalidGif = calls;
+  const corruptGif = new File([Buffer.from("GIF89a invalid")], "broken.gif", { type: "image/gif" });
+  const corruptResponse = await POST(request("", { image: corruptGif }));
+  assert.equal(corruptResponse.status, 400);
+  assert.equal((await corruptResponse.json()).code, "invalid_gif");
+  assert.equal(calls, callsBeforeInvalidGif, "Do not send corrupt GIFs to OpenAI");
+  assert.equal(review.verifyReview(gifReview.reviewToken, "test-user", png, "image/gif", "A surprised reaction"), null);
+  console.log("Passed GIF checks: signatures, size limit, animated first-frame conversion, corrupt input rejection, original animation storage, and review binding.");
   console.log("Passed caption checks: image/context payload, three choices, review without publication, more captions, signed selection, prompt/model metadata, output validation, refusal, timeout, rate limit, auth, configuration, persistence, and failure cleanup.");
 }
 run().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {

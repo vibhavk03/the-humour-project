@@ -4,13 +4,14 @@ export const IMAGE_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "image/gif": "gif",
 };
 export const ACCEPTED_IMAGE_TYPES = Object.keys(IMAGE_EXTENSIONS).join(",");
 
 export function validateImage(file: { size: number; type: string }) {
   if (!file.size) return "Choose an image to upload.";
   if (!Object.hasOwn(IMAGE_EXTENSIONS, file.type)) {
-    return "Image must be a PNG, JPG, or WEBP file.";
+    return "Image must be a PNG, JPG, WEBP, or GIF file.";
   }
   if (file.size > MAX_IMAGE_BYTES) return "Image must be 5 MB or smaller.";
   return "";

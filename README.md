@@ -83,7 +83,13 @@ older uploads retain null captions.
 The prompt in `app/posts/caption-prompt.ts` uses Sam's Columbia/Midwest/NYC persona,
 image-specific observational humor, and a limit of 25 words / 200 characters.
 The form displays the latest saved caption next to its image. PNG, JPEG, and WEBP
-are accepted for caption generation; GIFs are excluded. Requests share a 45-second
+and GIF are accepted for caption generation (up to 5 MB). Animated GIFs remain
+animated in previews and feeds. Sharp converts the first frame to PNG for the
+caption service, resized to at most 1536 pixels per side with a 40-megapixel decode
+limit; optional context can describe action beyond that frame. Review tokens bind
+to the original GIF, and publishing stores the original bytes and GIF MIME type.
+The existing `post-images` bucket setup already permits GIF, so no new SQL is needed.
+Requests share a 45-second
 OpenAI deadline across at most three attempts. Only confirmed temporary limits
 are retried, with backoff and `Retry-After` respected; delays over five seconds
 are returned to the caller. Quota/billing errors are not retried. The OpenAI response uses `store: false`.
