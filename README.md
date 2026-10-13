@@ -54,6 +54,11 @@ generated image-caption posts, including older generated posts, newest first.
 Posts are shared only after the user selects a caption and clicks Post to feed. Your Posts shows only the
 current user's uploads, including optional context and older uploads without
 captions. Both feeds have 12 posts per page and one-hour signed image URLs.
+Your own posts show a Delete post option on both feeds, with confirmation before
+permanent deletion. `DELETE /api/posts/[id]` requires authentication and explicitly
+filters by the signed-in owner in addition to posts RLS. Deletion removes the post,
+cascades its hearts, attempts to remove the stored image, and invalidates both feeds.
+Storage cleanup failures are logged; the post stays deleted.
 New saves invalidate both feeds. Generate explains that images and captions are
 shared while optional context stays private.
 `POST /api/posts` validates the session, file type/signature, 5 MB size limit, and

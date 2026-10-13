@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getHomeFeed, getUserFeed } from "./feed-data";
 import { HeartButton } from "./heart-button";
+import { DeletePostButton } from "./delete-post-button";
 
 export async function Feed({ supabase, userId, page, scope = "personal" }: { supabase: SupabaseClient; userId: string; page: number; scope?: "personal" | "home" }) {
   const isHome = scope === "home";
@@ -42,6 +43,7 @@ export async function Feed({ supabase, userId, page, scope = "personal" }: { sup
             <time dateTime={post.created_at} className="block text-xs text-zinc-500">
               {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(post.created_at))}
             </time>
+            {post.user_id === userId ? <DeletePostButton postId={post.id} /> : null}
           </div>
         </article>
       ))}

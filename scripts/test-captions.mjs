@@ -92,6 +92,73 @@ function completed(text = JSON.stringify({ captions })) {
 }
 
 async function run() {
+  const deletePostId = "12345678-1234-1234-1234-123456789012";
+  let deleteUser = "owner";
+  let existingPost = { id: deletePostId, user_id: "owner", image_path: "owner/photo.png" };
+  let deleteFails = false;
+  let cleanupFails = false;
+  let deletedImages = [];
+  const invalidated = [];
+  const deleteClient = {
+    auth: { getUser: async () => ({ data: { user: deleteUser ? { id: deleteUser } : null }, error: null }) },
+    from: table => {
+      assert.equal(table, "posts", "Deletion must use the owner-protected table");
+      const filters = {};
+      return { delete: () => ({
+        eq(field, value) { filters[field] = value; return this; },
+        select(fields) {
+          assert.equal(fields, "id, image_path");
+          return { maybeSingle: async () => {
+            if (deleteFails) return { data: null, error: { code: "test_delete_failure" } };
+            if (!existingPost || filters.id !== existingPost.id || filters.user_id !== existingPost.user_id) return { data: null, error: null };
+            const data = existingPost;
+            existingPost = null;
+            return { data, error: null };
+          } };
+        },
+      }) };
+    },
+    storage: { from: bucket => {
+      assert.equal(bucket, "post-images");
+      return { remove: async paths => {
+        assert.equal(existingPost, null, "Delete the post before its image");
+        deletedImages.push(...paths);
+        return { error: cleanupFails ? { name: "test_cleanup_failure" } : null };
+      } };
+    } },
+  };
+  const { DELETE: deletePost } = load("app/api/posts/[id]/route.ts", {
+    "next/headers": { cookies: async () => ({}) },
+    "next/cache": { revalidatePath: path => invalidated.push(path) },
+    "@/app/supabase/server": { createClient: () => deleteClient },
+  });
+  const deleteRequest = id => deletePost(new Request(`http://localhost/api/posts/${id}`, { method: "DELETE" }), { params: Promise.resolve({ id }) });
+  deleteUser = null;
+  assert.equal((await deleteRequest(deletePostId)).status, 401);
+  deleteUser = "owner";
+  assert.equal((await deleteRequest("invalid-id")).status, 400);
+  deleteUser = "another-user";
+  assert.equal((await deleteRequest(deletePostId)).status, 404);
+  assert.ok(existingPost, "Another user cannot delete the post");
+  assert.deepEqual(deletedImages, []);
+  deleteUser = "owner";
+  deleteFails = true;
+  assert.equal((await deleteRequest(deletePostId)).status, 500);
+  assert.ok(existingPost);
+  assert.deepEqual(deletedImages, [], "Failed deletion must leave the image intact");
+  deleteFails = false;
+  assert.equal((await deleteRequest(deletePostId)).status, 200);
+  assert.equal(existingPost, null);
+  assert.deepEqual(deletedImages, ["owner/photo.png"]);
+  assert.deepEqual(invalidated, ["/", "/your-posts"]);
+  assert.equal((await deleteRequest(deletePostId)).status, 404);
+  assert.equal(deletedImages.length, 1);
+  existingPost = { id: deletePostId, user_id: "owner", image_path: "owner/second.png" };
+  cleanupFails = true;
+  assert.equal((await deleteRequest(deletePostId)).status, 200, "Storage cleanup failure must not resurrect a deleted post");
+  assert.equal(existingPost, null);
+  console.log("Passed deletion checks: sign-in, valid IDs, ownership, missing posts, database failure, image cleanup, cleanup failure, and feed invalidation.");
+
   const heartPostId = "12345678-1234-1234-1234-123456789012";
   let heartUser = "user-a";
   let heartVisible = true;
