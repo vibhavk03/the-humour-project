@@ -6,9 +6,10 @@ import { createClient } from "@/app/supabase/client";
 type AuthControlsProps = {
   isSignedIn: boolean;
   signInLabel?: string;
+  returnToPostId?: string;
 };
 
-export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google" }: AuthControlsProps) {
+export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google", returnToPostId }: AuthControlsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -16,11 +17,15 @@ export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google" }
     setIsLoading(true);
     setMessage("");
 
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    if (returnToPostId) {
+      callbackUrl.searchParams.set("next", `${window.location.pathname}${window.location.search}#post-${returnToPostId}`);
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl.toString(),
         queryParams: {
           prompt: "select_account",
         },

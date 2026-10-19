@@ -50,7 +50,7 @@ The bucket stays private, and upload/update/delete permissions remain owner-only
 
 The navigation below each page introduction has Home Feed (`/`), Your Posts
 (`/your-posts`), and Generate (`/generate`). The top-right account menu shows the
-user's name/photo and contains their email, Edit Profile, and Sign Out. Home Feed is available to signed-in users and shows everyone's
+user's name/photo and contains their email, Edit Profile, and Sign Out. Home Feed is available to everyone, including signed-out visitors, and shows everyone's
 generated image-caption posts, including older generated posts, newest first.
 Posts are shared only after the user selects a caption and clicks Post to feed. Your Posts shows only the
 current user's uploads, including optional context and older uploads without
@@ -60,8 +60,8 @@ permanent deletion. `DELETE /api/posts/[id]` requires authentication and explici
 filters by the signed-in owner in addition to posts RLS. Deletion removes the post,
 cascades its hearts, attempts to remove the stored image, and invalidates both feeds.
 Storage cleanup failures are logged; the post stays deleted.
-New saves invalidate both feeds. Generate explains that images and captions are
-shared while optional context stays private.
+New saves invalidate both feeds. Generate explains that published images, captions, and author names are
+public while optional context stays private.
 `POST /api/posts` validates the session, file type/signature, 5 MB size limit, and
 1,000-character context limit. The default `generate` action returns three distinct
 captions and a signed review token without uploading or saving a post. The review
@@ -104,7 +104,7 @@ from Generate. Confirm three choices appear and neither the `posts` table nor
 option from either batch, post it, and check the chosen caption on both feeds.
 Using two accounts, confirm each sees both users' generated posts in Home Feed,
 only its own posts/context in Your Posts, and cannot change another user's posts
-or images. Signed-out uploads return 401 and cannot read the shared view or images.
+or images. Signed-out uploads return 401. After applying `public-feed.sql`, signed-out visitors can read published posts and their images, but cannot read private context or unpublished uploads.
 
 ## Post Author Names
 
@@ -117,8 +117,8 @@ badge on the current user's cards. Missing names display Campus contributor.
 Apply this migration before running the updated feed code.
 
 Verify with two accounts: each should see the other's name on community posts,
-while direct reads of the other's profile remain blocked. Signed-out users cannot
-read either feed view. Updating a profile name should update attribution on refresh.
+while direct reads of the other's profile remain blocked. After applying `public-feed.sql`, signed-out users can read `home_feed` but cannot
+read `user_feed`. Updating a profile name should update attribution on refresh.
 The personal view must only return the signed-in user's posts and context.
 
 ## Post Hearts
@@ -200,6 +200,7 @@ http://localhost:3000
 ```bash
 npm run lint
 npm run test:captions
+npm run test:public-feed
 npx next build --webpack
 ```
 
@@ -211,3 +212,37 @@ In Vercel:
 - Turn off Vercel deployment protection for assignment testing.
 - Add the production `/auth/callback` URL to Supabase Auth redirect URLs.
 - Submit the commit-specific Vercel URL required by the assignment.
+
+## Public Landing Feed
+
+Run **`supabase/public-feed.sql`** in the Supabase SQL Editor **after**
+`shared-feed.sql`, `post-authors.sql`, and `post-hearts.sql`. Apply this migration
+before deploying the public landing feed. Re-running the older shared-feed or
+post-author migrations afterward restores signed-in-only access; reapply
+`public-feed.sql` last if needed.
+
+The landing page shows all published (captioned) community posts, newest first,
+12 per page. Guests can read the restricted `home_feed` view, generate one-hour
+signed URLs for published post images, and retrieve aggregate heart counts.
+The image bucket stays private, and base posts, optional context, generation
+metadata, full profiles, profile photos, unpublished images, and individual heart
+rows retain their existing access rules. Public author attribution uses the same
+profile name already displayed on community posts.
+
+Clicking a heart while signed out opens a modal “Sign in to like
+this post” popup. Close it with Dismiss, the close button, Escape, or the backdrop. It does not send a heart request. Google sign-in returns the
+visitor to that feed page and post, including after required profile completion.
+The visitor then clicks the heart to save it. Only authenticated users can create,
+heart, or delete posts; existing ownership policies and API checks remain active.
+
+Verify after applying the migration:
+
+- In a signed-out browser, browse the first and subsequent pages; confirm images,
+  captions, names, GIF animation, and heart counts load.
+- Click a guest heart: the popup opens without a write or count change. Dismiss
+  it, reopen it, and sign in; confirm the same feed page/post is restored.
+- Confirm signed-out callers cannot read `user_feed`, other users' private
+  context, drafts, full profiles, or individual heart rows, and heart/upload APIs
+  return 401.
+- With two accounts, confirm hearts persist and totals update, personal feeds
+  remain owner-only, and only an owner sees/can use Delete post.

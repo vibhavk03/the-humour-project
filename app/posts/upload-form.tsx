@@ -165,6 +165,7 @@ export function UploadForm() {
               </label>
             ))}
           </fieldset>
+          <p className="text-xs leading-5 text-muted">Posting makes your photo, chosen caption, and author name visible to everyone. Optional context stays private.</p>
           <p role="status" className="text-sm text-muted">{choices.length} captions available{selected ? ". Ready to post your selection." : ". Select one to post."}</p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={publish} disabled={busy || !selected} className="comic-button comic-button-post">{isPublishing ? "Posting..." : "Post to feed"}</button>
@@ -181,7 +182,7 @@ export function UploadForm() {
       )}
       <details className="border-t border-ink-soft pt-3 text-xs text-muted">
         <summary className="w-fit cursor-pointer hover:text-ink">How your photo is used</summary>
-        <p className="mt-2 max-w-xl leading-6">Your photo and optional context are sent to OpenAI to generate captions. When you choose Post to feed, your photo and selected caption are shared with the community. Your context stays private.</p>
+        <p className="mt-2 max-w-xl leading-6">Your photo and optional context are sent to OpenAI to generate captions. When you choose Post to feed, your photo, selected caption, and author name are publicly visible, including to people who are not signed in. Your context stays private.</p>
       </details>
       {savedCaption ? (
         <section aria-label="Your saved caption" className="space-y-3 border-t border-ink-soft pt-5">

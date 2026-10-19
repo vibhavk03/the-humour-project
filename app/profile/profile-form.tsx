@@ -15,9 +15,10 @@ export type ProfileFormData = {
 
 type ProfileFormProps = {
   initialProfile: ProfileFormData;
+  returnTo?: string;
 };
 
-export function ProfileForm({ initialProfile }: ProfileFormProps) {
+export function ProfileForm({ initialProfile, returnTo }: ProfileFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [firstName, setFirstName] = useState(initialProfile.firstName);
@@ -174,6 +175,7 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
     setDeletePhoto(false);
     setHasSavedPhoto(Boolean(photo) || (hasSavedPhoto && !deletePhoto));
     setSuccess(result.message ?? "Profile saved.");
+    if (returnTo) router.push(returnTo);
     router.refresh();
   }
 

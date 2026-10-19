@@ -15,7 +15,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return <LandingPage />;
+  if (!user) return <LandingPage supabase={supabase} page={page} />;
 
   return (
     <main className="comic-page">
@@ -25,7 +25,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
         </PageIntro>
 
         <Navigation />
-        <Feed supabase={supabase} userId={user.id} page={page} scope="home" />
+        <div id="community-feed" className="scroll-mt-6">
+          <Feed supabase={supabase} userId={user.id} page={page} scope="home" />
+        </div>
       </section>
     </main>
   );

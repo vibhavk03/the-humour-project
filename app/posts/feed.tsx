@@ -4,11 +4,12 @@ import { getHomeFeed, getUserFeed } from "./feed-data";
 import { HeartButton } from "./heart-button";
 import { DeletePostButton } from "./delete-post-button";
 
-export async function Feed({ supabase, userId, page, scope = "personal" }: { supabase: SupabaseClient; userId: string; page: number; scope?: "personal" | "home" }) {
+export async function Feed({ supabase, userId, page, scope = "personal" }: { supabase: SupabaseClient; userId: string | null; page: number; scope?: "personal" | "home" }) {
   const isHome = scope === "home";
   const basePath = isHome ? "/" : "/your-posts";
-  const pageHref = (number: number) => number === 1 ? basePath : `${basePath}?page=${number}`;
-  const { posts, hasNext, error } = isHome ? await getHomeFeed(supabase, page) : await getUserFeed(supabase, userId, page);
+  const pageHref = (number: number) => `${number === 1 ? basePath : `${basePath}?page=${number}`}${isHome ? "#community-feed" : ""}`;
+  if (!isHome && !userId) return null;
+  const { posts, hasNext, error } = isHome ? await getHomeFeed(supabase, page) : await getUserFeed(supabase, userId!, page);
 
   if (error) {
     return (
@@ -28,7 +29,7 @@ export async function Feed({ supabase, userId, page, scope = "personal" }: { sup
           {page === 1 ? <Link href="/generate" className="comic-button">Generate a caption</Link> : null}
         </div>
       ) : <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">{posts.map(post => (
-        <article key={post.id} className="comic-panel comic-feed-card min-w-0 overflow-hidden">
+        <article key={post.id} id={`post-${post.id}`} className="comic-panel comic-feed-card scroll-mt-6 min-w-0 overflow-hidden">
           {post.signedImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={post.signedImageUrl} alt={(!isHome && post.context) || "Image for this caption"} loading="lazy" className="comic-feed-image w-full bg-pink-light object-contain" />
@@ -44,7 +45,7 @@ export async function Feed({ supabase, userId, page, scope = "personal" }: { sup
             {!isHome && post.context ? <p className="whitespace-pre-wrap break-words text-sm text-muted">{post.context}</p> : null}
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                {post.caption ? <HeartButton key={`${post.id}-${post.heartCount}-${post.hearted}`} postId={post.id} initialCount={post.heartCount} initialHearted={post.hearted} available={post.heartsAvailable} /> : null}
+                {post.caption ? <HeartButton key={`${post.id}-${post.heartCount}-${post.hearted}`} postId={post.id} initialCount={post.heartCount} initialHearted={post.hearted} available={post.heartsAvailable} isSignedIn={Boolean(userId)} /> : null}
               </div>
               {post.user_id === userId ? <DeletePostButton postId={post.id} /> : null}
             </div>

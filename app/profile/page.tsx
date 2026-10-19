@@ -1,3 +1,4 @@
+import { getFeedReturnPath } from "@/app/auth/return-path";
 import { PageIntro } from "@/app/page-intro";
 import { Navigation } from "@/app/navigation";
 import { cookies } from "next/headers";
@@ -11,7 +12,8 @@ type ProfileRow = {
   photo_url: string | null;
 };
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
+  const returnTo = getFeedReturnPath((await searchParams).next);
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
@@ -52,7 +54,7 @@ export default async function ProfilePage() {
         </PageIntro>
 
         <Navigation />
-        <ProfileForm initialProfile={formData} />
+        <ProfileForm initialProfile={formData} returnTo={returnTo === "/" ? undefined : returnTo} />
       </section>
     </main>
   );
