@@ -52,7 +52,7 @@ export function VoteButtons({ postId, initialScore, initialVote, available, isSi
 
   return (
     <div className="space-y-2">
-      <div role="group" aria-label="Post votes" aria-busy={isSaving} className="inline-flex items-center gap-0.5 rounded-full border border-ink/40 bg-white p-0.5 text-ink">
+      <div role="group" aria-label="Post votes" aria-busy={isSaving} className="comic-post-action inline-flex items-center justify-between gap-0.5 rounded-full border border-ink/40 bg-white p-0.5 text-ink">
         {([1, -1] as const).map(direction => {
           const label = direction === 1 ? "Upvote" : "Downvote";
           const action = vote === direction ? `Remove your ${label.toLowerCase()}` : `${label} this post`;

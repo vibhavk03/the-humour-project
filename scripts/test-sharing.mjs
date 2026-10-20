@@ -110,6 +110,7 @@ const { SharePostButton } = load("app/posts/share-post-button.tsx", {
   react: { ...React,
     useState(initial) { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = value; }]; },
     useRef(initial) { const i = refIndex++; return refs[i] ?? (refs[i] = { current: initial }); },
+    useEffect() {},
   },
 });
 function elements(node) { return !node || typeof node !== "object" ? [] : [node, ...React.Children.toArray(node.props?.children).flatMap(elements)]; }

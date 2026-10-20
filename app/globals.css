@@ -113,6 +113,10 @@ input[type="radio"] { accent-color: #660033; }
   .comic-intro-compact::after { width: 96px; height: 96px; }
   .comic-feed-image { height: clamp(11rem, 26svh, 16rem); }
   .comic-feed-card .comic-caption { padding: 0.75rem; font-size: 1rem; line-height: 1.5; }
+  .comic-post-action { width: max-content; height: 2.5rem; }
+  @media (pointer: coarse) {
+    .comic-post-action { height: 3rem; }
+  }
   .comic-panel {
     border: 2px solid #660033;
     border-radius: 3px;
