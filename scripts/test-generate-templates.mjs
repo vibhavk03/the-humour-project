@@ -164,11 +164,15 @@ try {
   const { SamplePicker } = load("app/posts/sample-picker.tsx", { react: mockReact, "@/app/trial/samples": samples });
   function renderPicker() { cursor = 0; refCursor = 0; return elements(SamplePicker({ selectedId: null, onSelect() {} })); }
   assert.equal(renderPicker().filter(node => node.type === "img").length, 8);
+  for (const node of renderPicker().filter(node => node.type === "img")) {
+    const id = node.props.src.split("/").at(-1).split("?")[0];
+    assert.equal(node.props.src.endsWith("?preview=1"), samples.getSample(id).mimeType !== "image/gif");
+  }
   renderPicker().find(node => node.type === "button" && node.props.children === "GIFs").props.onClick();
   for (const node of renderPicker().filter(node => node.type === "img")) {
     const id = node.props.src.split("/").at(-1).split("?")[0];
     assert.equal(samples.getSample(id).mimeType, "image/gif");
-    assert.ok(node.props.src.endsWith("?preview=1"));
+    assert.equal(node.props.src, `/api/samples/${id}`, "GIF cards load the animated original instead of a still frame");
   }
   renderPicker().find(node => node.type === "button" && node.props.children === "Next").props.onClick();
   assert.equal(renderPicker().filter(node => node.type === "img").length, Math.min(8, samples.SAMPLES.filter(sample => sample.mimeType === "image/gif").length - 8));

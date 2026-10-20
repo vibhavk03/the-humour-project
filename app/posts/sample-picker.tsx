@@ -22,7 +22,7 @@ export function SamplePicker({ selectedId, onSelect, disabled = false }: { selec
           <button key={sample.id} type="button" disabled={disabled} aria-pressed={selectedId === sample.id} onClick={() => onSelect(sample.id)} className={`cursor-pointer overflow-hidden rounded-sm border-2 border-ink text-left transition-colors hover:bg-pink-light focus-visible:bg-pink-light disabled:cursor-wait ${selectedId === sample.id ? 'bg-pink-light shadow-[3px_3px_0_#660033]' : 'bg-card'}`}>
             <div className="relative border-b-2 border-ink bg-paper">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/api/samples/${sample.id}?preview=1`} alt={sample.description} loading="lazy" className="h-28 w-full object-contain" />
+              <img src={`/api/samples/${sample.id}${sample.mimeType === "image/gif" ? "" : "?preview=1"}`} alt={sample.description} loading="lazy" className="h-28 w-full object-contain" />
               {sample.mimeType === "image/gif" ? <span className="comic-stamp absolute right-1 top-1">GIF</span> : null}
             </div>
             <span className="flex min-h-12 items-center justify-between gap-2 p-2 text-xs font-bold"><span>{sample.label}</span>{selectedId === sample.id ? <span aria-label="Selected">✓</span> : null}</span>
