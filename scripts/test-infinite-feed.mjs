@@ -15,7 +15,7 @@ function load(path, imports = {}) {
 }
 const cursorTools = load("app/posts/feed-cursor.ts");
 const uuid = n => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
-const post = n => ({ id: uuid(n), user_id: "owner", image_path: `owner/${n}.gif`, caption: `Caption ${n}`, context: "private context", created_at: "2026-10-20T10:00:00.123456+00:00", heartCount: 2, hearted: false, heartsAvailable: true, signedImageUrl: "/image.gif" });
+const post = n => ({ id: uuid(n), user_id: "owner", image_path: `owner/${n}.gif`, caption: `Caption ${n}`, context: "private context", created_at: "2026-10-20T10:00:00.123456+00:00", score: 2, userVote: 0, votesAvailable: true, signedImageUrl: "/image.gif" });
 const boundary = { ...post(20), crowdPick: false };
 const pinned = { ...post(1), crowdPick: true };
 const encoded = cursorTools.makeFeedCursor([pinned, boundary]);
@@ -45,10 +45,10 @@ const client = {
     };
     return query;
   },
-  rpc: async (_name, args) => ({ data: args.post_ids.map(post_id => ({ post_id, heart_count: 2, hearted: false })), error: null }),
+  rpc: async (_name, args) => ({ data: args.post_ids.map(post_id => ({ post_id, score: 2, user_vote: 0 })), error: null }),
   storage: { from: () => ({ createSignedUrls: async paths => ({ data: paths.map(path => ({ path, signedUrl: `/signed/${path}` })), error: null }) }) },
 };
-const { getNextFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./heart-data": load("app/posts/heart-data.ts", { "server-only": {} }) });
+const { getNextFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./vote-data": load("app/posts/vote-data.ts", { "server-only": {} }) });
 const first = await getNextFeed(client, cursor);
 assert.equal(table, "home_feed");
 assert.equal(selected.includes("context"), false);
@@ -113,7 +113,7 @@ global.IntersectionObserver = class {
 const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
   "./author-profile": { AuthorProfilePopover: ({ authorName }) => React.createElement("span", null, `By ${authorName || "Campus contributor"}`) },
   "next/link": () => null,
-  "./heart-button": { HeartButton: () => null },
+  "./vote-buttons": { VoteButtons: () => null },
   "./delete-post-button": { DeletePostButton: () => null },
   react: {
     ...React,

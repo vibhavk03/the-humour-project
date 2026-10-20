@@ -24,15 +24,15 @@ for (const path of [null, undefined, [], "https://example.com", "//example.com",
   assert.equal(getFeedReturnPath(path), "/", `Reject unsafe return path: ${path}`);
 }
 
-// Exercise guest heart interactions with deterministic hook state and no network.
+// Exercise guest vote interactions with deterministic hook state and no network.
 let state = [];
 let cursor = 0;
 let refCursor = 0;
 const refs = [];
 let networkCalls = 0;
 const fetchBefore = global.fetch;
-global.fetch = async () => { networkCalls++; throw new Error("Guest must not write hearts"); };
-const { HeartButton } = load("app/posts/heart-button.tsx", {
+global.fetch = async () => { networkCalls++; throw new Error("Guest must not write votes"); };
+const { VoteButtons } = load("app/posts/vote-buttons.tsx", {
   react: {
     ...React,
     useState(initial) {
@@ -49,13 +49,13 @@ function elements(node) {
   if (!node || typeof node !== "object") return [];
   return [node, ...React.Children.toArray(node.props?.children).flatMap(elements)];
 }
-function renderHeart(available = true) {
+function renderVotes(available = true) {
   cursor = 0;
   refCursor = 0;
-  return elements(HeartButton({ postId: id, initialCount: 7, initialHearted: false, available, isSignedIn: false }));
+  return elements(VoteButtons({ postId: id, initialScore: 7, initialVote: 0, available, isSignedIn: false }));
 }
 try {
-  let tree = renderHeart();
+  let tree = renderVotes();
   const dialog = tree.find(node => node.type === "dialog");
   let opened = false;
   const modal = {
@@ -67,24 +67,26 @@ try {
   assert.equal(button.props.disabled, false);
   assert.equal(button.props["aria-expanded"], false);
   await button.props.onClick();
-  tree = renderHeart();
+  tree = renderVotes();
   assert.equal(opened, true);
-  assert.ok(tree.some(node => node.type === "h2" && node.props.children === "Sign in to like this post."));
+  assert.ok(tree.some(node => node.type === "h2" && node.props.children === "Sign in to vote on this post."));
   assert.equal(tree.find(node => node.type === "button").props["aria-expanded"], true);
   assert.ok(tree.some(node => node.type === "span" && node.props.children === 7), "Count stays unchanged");
   tree.find(node => node.type === "button" && node.props.children === "Dismiss").props.onClick();
-  assert.equal(renderHeart().find(node => node.type === "button").props["aria-expanded"], false);
+  assert.equal(renderVotes().find(node => node.type === "button").props["aria-expanded"], false);
   assert.equal(opened, false);
-  await renderHeart().find(node => node.type === "button").props.onClick();
-  renderHeart().find(node => node.props?.["aria-label"] === "Close sign-in popup").props.onClick();
+  await renderVotes().find(node => node.type === "button").props.onClick();
+  renderVotes().find(node => node.props?.["aria-label"] === "Close sign-in popup").props.onClick();
   assert.equal(opened, false, "Close button dismisses the popup");
-  await renderHeart().find(node => node.type === "button").props.onClick();
+  await renderVotes().find(node => node.type === "button").props.onClick();
   // Native Escape closes the dialog and fires onClose.
   dialog.props.onClose();
-  assert.equal(renderHeart().find(node => node.type === "button").props["aria-expanded"], false);
+  assert.equal(renderVotes().find(node => node.type === "button").props["aria-expanded"], false);
+  renderVotes().filter(node => node.type === "button")[1].props.onClick();
+  assert.equal(opened, true, "Guest downvotes also prompt for sign-in");
   assert.equal(networkCalls, 0);
   state = [];
-  assert.equal(renderHeart(false).find(node => node.type === "button").props.disabled, false, "Guests can sign in even if stats are unavailable");
+  assert.equal(renderVotes(false).find(node => node.type === "button").props.disabled, false, "Guests can sign in even if stats are unavailable");
 } finally {
   global.fetch = fetchBefore;
 }
@@ -93,7 +95,7 @@ const feedCursor = load("app/posts/feed-cursor.ts");
 const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
   "./author-profile": { AuthorProfilePopover: ({ authorName }) => React.createElement("span", null, `By ${authorName || "Campus contributor"}`) },
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
-  "./heart-button": { HeartButton: ({ isSignedIn, initialCount }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} hearts: ${initialCount}`) },
+  "./vote-buttons": { VoteButtons: ({ isSignedIn, initialScore }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} score: ${initialScore}`) },
   "./delete-post-button": { DeletePostButton: () => React.createElement("button", null, "Delete post") },
 });
 const { Feed } = load("app/posts/feed.tsx", {
@@ -101,15 +103,15 @@ const { Feed } = load("app/posts/feed.tsx", {
   "./feed-cursor": feedCursor,
   "./infinite-feed": { InfiniteFeed },
   "./feed-data": {
-    getHomeFeed: async () => ({ posts: [{ id, user_id: "owner", caption: "Public punchline", context: "Private backstory", authorName: "Alex", crowdPick: true, signedImageUrl: "https://example.com/image.gif", created_at: "2026-10-19T12:00:00Z", heartCount: 7, hearted: false, heartsAvailable: true }], hasNext: true, error: false }),
+    getHomeFeed: async () => ({ posts: [{ id, user_id: "owner", caption: "Public punchline", context: "Private backstory", authorName: "Alex", crowdPick: true, signedImageUrl: "https://example.com/image.gif", created_at: "2026-10-19T12:00:00Z", score: 7, userVote: 0, votesAvailable: true }], hasNext: true, error: false }),
     getUserFeed: async () => { throw new Error("Guests must not query private feeds"); },
   },
-  "./heart-button": { HeartButton: ({ isSignedIn, initialCount }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} hearts: ${initialCount}`) },
+  "./vote-buttons": { VoteButtons: ({ isSignedIn, initialScore }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} score: ${initialScore}`) },
   "./delete-post-button": { DeletePostButton: () => React.createElement("button", null, "Delete post") },
 });
 const html = renderToStaticMarkup(await Feed({ supabase: {}, userId: null, scope: "home" }));
 assert.match(html, /Public punchline/);
-assert.match(html, /guest hearts: 7/);
+assert.match(html, /guest score: 7/);
 assert.match(html, /image.gif/);
 assert.match(html, /Load more memes/);
 assert.doesNotMatch(html, /Feed pagination|Older posts|Newer posts/);

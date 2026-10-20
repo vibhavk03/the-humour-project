@@ -18,7 +18,7 @@ export default async function Page() {
     <main className="comic-page">
       <section className="mx-auto w-full max-w-7xl space-y-5">
         <PageIntro title="Home Feed" eyebrow="The campus comic · NYC edition" compact>
-          Everyone&apos;s camera roll, with a punchline.
+          Your daily dose of campus humor.
         </PageIntro>
 
         <Navigation />

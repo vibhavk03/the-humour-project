@@ -220,33 +220,31 @@ Run **`supabase/public-feed.sql`** in the Supabase SQL Editor **after**
 `shared-feed.sql`, `post-authors.sql`, and `post-hearts.sql`. Apply this migration
 before deploying the public landing feed. Re-running the older shared-feed or
 post-author migrations afterward restores signed-in-only access; reapply
-`public-feed.sql` last if needed.
+`public-feed.sql`, then `post-votes.sql` last if needed.
 
-The landing page shows all published (captioned) community posts, newest first,
-12 per page. Guests can read the restricted `home_feed` view, generate one-hour
-signed URLs for published post images, and retrieve aggregate heart counts.
-The image bucket stays private, and base posts, optional context, generation
-metadata, full profiles, profile photos, unpublished images, and individual heart
-rows retain their existing access rules. Public author attribution uses the same
-profile name already displayed on community posts.
+The landing page shows published community posts with Crowd Pick first and the
+rest newest first. Infinite scroll loads 12 posts at a time. Guests can read the
+restricted `home_feed` view, generate one-hour signed URLs for published post
+images, and retrieve aggregate vote scores after `post-votes.sql` is applied.
+The image bucket stays private. Base posts, optional context, generation metadata,
+full profiles, unpublished images, and individual vote rows retain their access
+rules. The author-profile migration separately shares only published authors'
+names and current profile photos.
 
-Clicking a heart while signed out opens a modal “Sign in to like
-this post” popup. Close it with Dismiss, the close button, Escape, or the backdrop. It does not send a heart request. Google sign-in returns the
-visitor to that feed page and post, including after required profile completion.
-The visitor then clicks the heart to save it. Only authenticated users can create,
-heart, or delete posts; existing ownership policies and API checks remain active.
+Clicking either vote arrow while signed out opens the “Sign in to vote on this
+post” popup without changing the score. Dismiss it with the close button, Escape,
+Dismiss, or the backdrop. The visitor can vote after signing in. Only authenticated
+users can publish, vote, or delete their own posts, with API and RLS checks.
 
-Verify after applying the migration:
+Verify after applying the migrations:
 
-- In a signed-out browser, browse the first and subsequent pages; confirm images,
-  captions, names, GIF animation, and heart counts load.
-- Click a guest heart: the popup opens without a write or count change. Dismiss
-  it, reopen it, and sign in; confirm the same feed page/post is restored.
-- Confirm signed-out callers cannot read `user_feed`, other users' private
-  context, drafts, full profiles, or individual heart rows, and heart/upload APIs
-  return 401.
-- With two accounts, confirm hearts persist and totals update, personal feeds
-  remain owner-only, and only an owner sees/can use Delete post.
+- Browse signed out and scroll through multiple batches; confirm images,
+  captions, names, GIF animation, and scores load.
+- Click either guest arrow and confirm the popup opens without writing a vote.
+- Confirm signed-out callers cannot read `user_feed`, private context, drafts,
+  full profiles, or individual vote rows, and vote/upload APIs return 401.
+- With two accounts, confirm upvotes, downvotes, and removals persist, scores
+  update, personal feeds remain owner-only, and only owners can delete posts.
 
 ## Guest Sample Trial
 
@@ -343,10 +341,10 @@ and concurrent reservations. It never connects to the app database. Set
 
 Run **`supabase/crowd-pick.sql`** after `public-feed.sql`, `post-authors.sql`, and
 `post-hearts.sql`. The home feed (signed in and signed out) then pins the globally
-most-liked published post to the first position with a **Crowd Pick**
+highest-scoring published post to the first position with a **Crowd Pick**
 badge. Every other post remains newest first. The winner is not repeated later
 in the feed. Ties favor the newer post, then descending post ID. If no published
-post has a heart, there is no Crowd Pick. Your Posts keeps its existing ordering.
+post has a positive net score, there is no Crowd Pick. Your Posts keeps its existing ordering.
 
 The restricted `ranked_home_feed` view ranks all published posts before the app
 loads its initial 12 posts. It exposes the existing public fields and a single
@@ -358,7 +356,7 @@ The community feed and Your Posts automatically load another 12 posts near the
 bottom, with a **Load more memes** fallback and explicit retry after errors.
 `/api/feed` uses a timestamp/ID cursor and excludes the initial Crowd Pick from
 later batches. New posts and deletions do not shift the continuation boundary.
-Likes update locally and deletions remove the card without resetting the loaded
+Votes update locally and deletions remove the card without resetting the loaded
 feed. The Crowd Pick is recalculated when the feed is refreshed. No database
 migration is needed for infinite scroll beyond the existing feed setup.
 
@@ -437,3 +435,33 @@ returned by `/api/authors/[id]`.
 Run `npm run test:authors` for route, caching, and interaction checks. Run
 `sh scripts/test-author-profiles.sh` for RLS and storage visibility checks in an
 isolated temporary PostgreSQL 18 cluster (`TRIAL_PG_BIN` overrides the binaries).
+
+## Upvotes and downvotes
+
+**Apply `supabase/post-votes.sql` last**, after the existing `post-hearts.sql`,
+`public-feed.sql`, and `crowd-pick.sql` setup, before deploying the new app.
+It extends the existing `post_hearts` table in place so historical likes become
++1 upvotes. There is still one row per user/post; a vote can only be +1 or -1,
+and no row means no vote. Existing owner RLS remains, with an update policy for
+switching directions. The migration is safe to rerun without resetting votes.
+
+The feed now shows an up arrow, net score (upvotes minus downvotes), and a down
+arrow. From neutral, upvote sets the user’s contribution to +1 and downvote to
+-1. The opposite arrow switches directly between +1 and -1. Clicking the selected
+arrow again clears the vote to 0. Guests get the sign-in popup for either direction. Failures preserve the
+previous score/selection, and in-flight writes disable both arrows. Changes do
+not reset infinite scroll. Crowd Pick uses the highest positive net score,
+then creation time and post ID for ties, and updates when the feed is refreshed.
+
+`PUT /api/posts/[id]/vote` accepts `{ "vote": 1 }` or `{ "vote": -1 }`;
+`DELETE` removes the caller's vote. User identity always comes from the session.
+`get_post_votes` exposes only aggregate scores and the caller's own vote for
+published posts; individual voter rows remain private. The retired `/heart`
+endpoint returns 410 so older clients refresh instead of writing a second state.
+If the migration has not been applied, browsing remains available but voting is
+disabled. Avoid rerunning the older ranking migrations after `post-votes.sql`;
+reapply `post-votes.sql` last if those migrations are replayed.
+
+Run `npm run test:votes` for endpoint and control behavior, and
+`sh scripts/test-votes.sh` for migration, RLS, score/ranking, and cascade checks in
+an isolated temporary PostgreSQL 18 cluster (`TRIAL_PG_BIN` can override binaries).

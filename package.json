@@ -16,7 +16,8 @@
     "predev": "npm run sync:memes",
     "prebuild": "npm run sync:memes",
     "test:infinite-feed": "node scripts/test-infinite-feed.mjs",
-    "test:authors": "node scripts/test-author-profiles.mjs"
+    "test:authors": "node scripts/test-author-profiles.mjs",
+    "test:votes": "node scripts/test-votes.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

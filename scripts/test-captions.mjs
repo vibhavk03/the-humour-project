@@ -24,8 +24,8 @@ const service = load("app/posts/generate-caption.ts", {
 });
 const review = load("app/posts/caption-review.ts", { "server-only": {} });
 const validation = load("app/posts/upload-validation.ts");
-const heartData = load("app/posts/heart-data.ts", { "server-only": {} });
-const { getUserFeed, getHomeFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./heart-data": heartData });
+const voteData = load("app/posts/vote-data.ts", { "server-only": {} });
+const { getUserFeed, getHomeFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./vote-data": voteData });
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 const caption = "This latte and my degree have the same financing plan.";
 const captions = [caption, "My coffee has a better financial aid package than I do.", "Studying the receipt counts as economics homework."];
@@ -161,66 +161,6 @@ async function run() {
   assert.equal(existingPost, null);
   console.log("Passed deletion checks: sign-in, valid IDs, ownership, missing posts, database failure, image cleanup, cleanup failure, and feed invalidation.");
 
-  const heartPostId = "12345678-1234-1234-1234-123456789012";
-  let heartUser = "user-a";
-  let heartVisible = true;
-  let heartWriteFails = false;
-  const voters = new Set();
-  const heartClient = {
-    auth: { getUser: async () => ({ data: { user: heartUser ? { id: heartUser } : null }, error: null }) },
-    from: table => {
-      if (table === "home_feed") {
-        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: heartVisible ? { id: heartPostId } : null, error: null }) }) }) };
-      }
-      assert.equal(table, "post_hearts");
-      return {
-        upsert: async (row, options) => {
-          assert.equal(row.post_id, heartPostId);
-          assert.equal(row.user_id, heartUser);
-          assert.equal(options.ignoreDuplicates, true);
-          if (!heartWriteFails) voters.add(row.user_id);
-          return { error: heartWriteFails ? { code: "test_write_failure" } : null };
-        },
-        delete: () => ({ eq(field, value) {
-          if (field === "post_id") { assert.equal(value, heartPostId); return this; }
-          assert.equal(field, "user_id");
-          assert.equal(value, heartUser);
-          voters.delete(value);
-          return Promise.resolve({ error: null });
-        } }),
-      };
-    },
-    rpc: (name, args) => {
-      assert.equal(name, "get_post_hearts");
-      assert.deepEqual(args.post_ids, [heartPostId]);
-      return { single: async () => ({ data: { heart_count: voters.size, hearted: voters.has(heartUser) }, error: null }) };
-    },
-  };
-  const heartRoute = load("app/api/posts/[id]/heart/route.ts", {
-    "next/headers": { cookies: async () => ({}) },
-    "next/cache": { revalidatePath: () => {} },
-    "@/app/supabase/server": { createClient: () => heartClient },
-  });
-  const heartContext = { params: Promise.resolve({ id: heartPostId }) };
-  const heartRequest = new Request("http://localhost/api/posts/heart", { method: "PUT", body: JSON.stringify({ user_id: "spoofed-user" }) });
-  assert.deepEqual(await (await heartRoute.PUT(heartRequest, heartContext)).json(), { hearted: true, count: 1 });
-  assert.deepEqual(await (await heartRoute.PUT(heartRequest, heartContext)).json(), { hearted: true, count: 1 });
-  heartUser = "user-b";
-  assert.deepEqual(await (await heartRoute.PUT(heartRequest, heartContext)).json(), { hearted: true, count: 2 });
-  assert.deepEqual(await (await heartRoute.DELETE(heartRequest, heartContext)).json(), { hearted: false, count: 1 });
-  assert.deepEqual(await (await heartRoute.DELETE(heartRequest, heartContext)).json(), { hearted: false, count: 1 });
-  assert.ok(voters.has("user-a"), "Removing a heart must not affect another user");
-  heartUser = null;
-  assert.equal((await heartRoute.PUT(heartRequest, heartContext)).status, 401);
-  heartUser = "user-a";
-  assert.equal((await heartRoute.PUT(heartRequest, { params: Promise.resolve({ id: "invalid" }) })).status, 400);
-  heartVisible = false;
-  assert.equal((await heartRoute.PUT(heartRequest, heartContext)).status, 404);
-  heartVisible = true;
-  heartWriteFails = true;
-  assert.equal((await heartRoute.PUT(heartRequest, heartContext)).status, 500);
-  console.log("Passed heart checks: authentication, visibility, idempotent add/remove, one heart per user, counts, ownership, and write failures.");
-
   let queriedUser;
   let queriedTable;
   let selectedFields;
@@ -229,7 +169,7 @@ async function run() {
   let signedPaths;
   let feedError = null;
   let imageError = null;
-  let heartsError = null;
+  let votesError = null;
   let feedRows = Array.from({ length: 13 }, (_, index) => ({
     id: String(index), user_id: "test-user", image_path: `test-user/${index}.png`, caption: index ? "A caption" : null,
     context: null, created_at: "2026-10-05T12:00:00Z",
@@ -243,8 +183,8 @@ async function run() {
   };
   const feedClient = {
     rpc: async (name, args) => {
-      assert.equal(name, "get_post_hearts");
-      return { data: args.post_ids.map(post_id => ({ post_id, heart_count: 2, hearted: true })), error: heartsError };
+      assert.equal(name, "get_post_votes");
+      return { data: args.post_ids.map(post_id => ({ post_id, score: 2, user_vote: 1 })), error: votesError };
     },
     from: table => { queriedTable = table; return query; },
     storage: { from: bucket => {
@@ -266,9 +206,9 @@ async function run() {
   assert.equal(feed.hasNext, true);
   assert.equal(signedPaths.length, 12);
   assert.equal(feed.posts[0].caption, null, "Keep older uploads without captions");
-  assert.equal(feed.posts[0].heartsAvailable, false);
-  assert.equal(feed.posts[1].heartCount, 2);
-  assert.equal(feed.posts[1].hearted, true);
+  assert.equal(feed.posts[0].votesAvailable, false);
+  assert.equal(feed.posts[1].score, 2);
+  assert.equal(feed.posts[1].userVote, 1);
   assert.equal(feed.posts[0].signedImageUrl, "https://test.invalid/test-user/0.png");
   feedRows = [];
   feed = await getUserFeed(feedClient, "test-user", 2);
@@ -313,10 +253,10 @@ async function run() {
   assert.equal(queriedTable, "home_feed");
   assert.equal(feed.error, false, "Missing ranking migration must not break browsing");
   query.returns = originalReturns;
-  heartsError = { code: "missing_migration" };
+  votesError = { code: "missing_migration" };
   feed = await getUserFeed(feedClient, "test-user", 1);
-  assert.equal(feed.error, false, "A missing hearts migration must not break the feed");
-  assert.equal(feed.posts[0].heartsAvailable, false);
+  assert.equal(feed.error, false, "A missing voting migration must not break the feed");
+  assert.equal(feed.posts[0].votesAvailable, false);
   console.log("Passed feed checks: personal user filter, community view, context privacy, newest-first ordering, pagination, signed images, legacy posts, and errors.");
 
   process.env.OPENAI_API_KEY = "test-key";

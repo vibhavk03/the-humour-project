@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FeedPost } from "./feed-data";
-import { HeartButton } from "./heart-button";
+import { VoteButtons } from "./vote-buttons";
 import { DeletePostButton } from "./delete-post-button";
 import { AuthorProfilePopover } from "./author-profile";
 
@@ -77,7 +77,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
         <article key={post.id} id={`post-${post.id}`} className="comic-panel comic-feed-card scroll-mt-6 min-w-0 overflow-hidden">
           {isHome && post.crowdPick ? (
             <div className="border-b-2 border-ink bg-green-light px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-forest">
-              <span aria-hidden="true">★ </span>Crowd Pick <span className="font-normal">· Most liked</span>
+              <span aria-hidden="true">★ </span>Crowd Pick <span className="font-normal">· Top voted</span>
             </div>
           ) : null}
           {post.signedImageUrl ? (
@@ -95,7 +95,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
             {!isHome && post.context ? <p className="whitespace-pre-wrap break-words text-sm text-muted">{post.context}</p> : null}
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                {post.caption ? <HeartButton key={`${post.id}-${post.heartCount}-${post.hearted}`} postId={post.id} initialCount={post.heartCount} initialHearted={post.hearted} available={post.heartsAvailable} isSignedIn={Boolean(userId)} refreshOnChange={false} /> : null}
+                {post.caption ? <VoteButtons key={`${post.id}-${post.score}-${post.userVote}`} postId={post.id} initialScore={post.score} initialVote={post.userVote} available={post.votesAvailable} isSignedIn={Boolean(userId)} /> : null}
               </div>
               {post.user_id === userId ? <DeletePostButton postId={post.id} onDeleted={() => setPosts(current => current.filter(item => item.id !== post.id))} /> : null}
             </div>
