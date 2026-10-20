@@ -106,7 +106,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
       ))}</div>}
       <div ref={sentinel} className="flex min-h-16 flex-col items-center justify-center gap-3" aria-busy={loading}>
         <p role="status" aria-live="polite" className="text-sm text-muted">
-          {loading ? "Loading more memes…" : !cursor && posts.length ? "You’re all caught up." : ""}
+          {loading ? "Loading more memes…" : !cursor && posts.length ? (isHome ? "You’re all caught up." : "That’s all your posts for now.") : ""}
         </p>
         {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
         {cursor ? <button type="button" onClick={() => void loadMore()} disabled={loading} className="comic-button comic-button-secondary disabled:opacity-50">
