@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { HomeFeedSort } from "./feed-sort";
 import type { FeedPost } from "./feed-data";
 import { VoteButtons } from "./vote-buttons";
 import { DeletePostButton } from "./delete-post-button";
 import { AuthorProfilePopover } from "./author-profile";
 
-export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
-  initialPosts: FeedPost[]; initialCursor: string | null; userId: string | null; scope: "personal" | "home";
+export function InfiniteFeed({ initialPosts, initialCursor, userId, scope, sort = "all" }: {
+  initialPosts: FeedPost[]; initialCursor: string | null; userId: string | null; scope: "personal" | "home"; sort?: HomeFeedSort;
 }) {
   const isHome = scope === "home";
   const [posts, setPosts] = useState(initialPosts);
@@ -29,7 +30,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ scope, cursor });
+      const params = new URLSearchParams({ scope, cursor, sort });
       const response = await fetch(`/api/feed?${params}`, { cache: "no-store", signal: request.signal });
       const result = await response.json() as { posts?: FeedPost[]; nextCursor?: string | null; error?: string };
       if (!response.ok) throw new Error(result.error || "Posts could not be loaded. Please try again.");
@@ -52,7 +53,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
       pending.current = false;
       if (!request.signal.aborted) setLoading(false);
     }
-  }, [cursor, scope]);
+  }, [cursor, scope, sort]);
 
   useEffect(() => {
     const target = sentinel.current;
@@ -66,11 +67,11 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
 
   return (
     <section aria-label={isHome ? "Community posts" : "Your saved posts"} className="space-y-6">
-      {!posts.length ? (
+      {!posts.length && !cursor ? (
         <div className="comic-panel space-y-4 p-7 text-center">
-          <h2 className="comic-heading text-2xl">{isHome ? "Be the first to bring the punchline" : "Your first punchline starts here"}</h2>
-          <p className="text-sm text-muted">{isHome ? "Generate a caption to start the community feed." : "Upload an image and generate a caption. Your saved posts will appear here."}</p>
-          <Link href={userId ? "/generate" : "/try"} className="comic-button">Generate a caption</Link>
+          <h2 className="comic-heading text-2xl">{isHome && sort === "unrated" ? "You’ve rated every post" : isHome ? "Be the first to bring the punchline" : "Your first punchline starts here"}</h2>
+          <p className="text-sm text-muted">{isHome && sort === "unrated" ? "Check back for new posts, or switch to All to browse the community." : isHome ? "Generate a caption to start the community feed." : "Upload an image and generate a caption. Your saved posts will appear here."}</p>
+          <Link href={isHome && sort === "unrated" ? "/#community-feed" : userId ? "/generate" : "/try"} className="comic-button">{isHome && sort === "unrated" ? "See all posts" : "Generate a caption"}</Link>
         </div>
       ) : <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">{posts.map(post => (
 
@@ -95,7 +96,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
             {!isHome && post.context ? <p className="whitespace-pre-wrap break-words text-sm text-muted">{post.context}</p> : null}
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                {post.caption ? <VoteButtons key={`${post.id}-${post.score}-${post.userVote}`} postId={post.id} initialScore={post.score} initialVote={post.userVote} available={post.votesAvailable} isSignedIn={Boolean(userId)} /> : null}
+                {post.caption ? <VoteButtons key={`${post.id}-${post.score}-${post.userVote}`} postId={post.id} initialScore={post.score} initialVote={post.userVote} available={post.votesAvailable} isSignedIn={Boolean(userId)} onVoteChange={vote => { if (sort === "unrated" && vote !== 0) setPosts(current => current.filter(item => item.id !== post.id)); }} /> : null}
               </div>
               {post.user_id === userId ? <DeletePostButton postId={post.id} onDeleted={() => setPosts(current => current.filter(item => item.id !== post.id))} /> : null}
             </div>

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { HomeFeedSort } from "@/app/posts/feed-sort";
 import { Feed } from "@/app/posts/feed";
 
-export function LandingPage({ supabase }: { supabase: SupabaseClient }) {
+export function LandingPage({ supabase, sort = "all" }: { supabase: SupabaseClient; sort?: HomeFeedSort }) {
   return (
     <main className="comic-page">
       <div className="mx-auto w-full max-w-7xl space-y-8">
@@ -21,9 +22,8 @@ export function LandingPage({ supabase }: { supabase: SupabaseClient }) {
         <section id="community-feed" aria-labelledby="community-title" className="scroll-mt-6 space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 id="community-title" className="comic-heading text-2xl sm:text-3xl">The community feed</h2>
-            <p className="font-mono text-xs text-muted">The crowd favorite, then newest first</p>
           </div>
-          <Feed supabase={supabase} userId={null} scope="home" />
+          <Feed supabase={supabase} userId={null} scope="home" sort={sort} />
         </section>
 
         <section aria-label="How to make a meme" className="comic-panel flex flex-wrap items-center justify-between gap-5 bg-green-light p-5 sm:p-7">

@@ -515,3 +515,34 @@ No database migration or new environment variables are needed.
 
 Run `npm run test:caption-limit`, `npm run test:generate`, and
 `npm run test:guest-trial` for the run limit, reset, preview, and publishing checks.
+
+## Home feed filters
+
+Run **`supabase/feed-filters.sql` after `public-feed.sql` and `post-votes.sql`**.
+It adds a scored public feed view and a caller-specific Not rated view without
+exposing private context, profiles, or individual voter rows. The migration is
+safe to rerun. Until applied, All and Newest first still work; Top voted and Not
+rated report an unavailable view instead of silently using the wrong order.
+
+Home and the signed-out landing feed have four filters:
+
+- **All** (default): Crowd Pick first, then newest first.
+- **Newest first**: strictly creation time, then descending post ID.
+- **Top voted**: net vote score descending, then creation time and post ID.
+- **Not rated**: newest posts with no current vote by the signed-in user. Both
+  upvoted and downvoted posts are excluded. Clearing a vote makes it eligible again.
+
+Not rated and its explanatory text are hidden for guests; its API still rejects unauthenticated requests.
+Voting removes a card from this view only after the write succeeds. Changing
+filters resets the scroll batch and stores the selected filter in `?sort=...`,
+so browser back/forward and shared links work. Only All pins Crowd Pick. Personal
+Your Posts ordering is unchanged.
+
+Infinite scroll uses a filter-specific cursor; Top voted includes the score and
+creation-time/ID tie breakers. The API rejects a cursor from a different filter.
+Live votes may change ranking between batches; refresh to get the latest order.
+
+Run `npm run test:feed-filters`, `npm run test:public-feed`, and
+`npm run test:infinite-feed` for queries, cursors, controls, and access boundaries.
+Run `sh scripts/test-feed-filters.sh` for actual view permissions and per-user
+filter behavior in an isolated PostgreSQL 18 cluster (`TRIAL_PG_BIN` override).

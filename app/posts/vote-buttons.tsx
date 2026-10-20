@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { AuthControls } from "@/app/auth/auth-controls";
 import type { Vote } from "./vote-data";
 
-export function VoteButtons({ postId, initialScore, initialVote, available, isSignedIn = true }: {
-  postId: string; initialScore: number; initialVote: Vote; available: boolean; isSignedIn?: boolean;
+export function VoteButtons({ postId, initialScore, initialVote, available, isSignedIn = true, onVoteChange }: {
+  postId: string; initialScore: number; initialVote: Vote; available: boolean; isSignedIn?: boolean; onVoteChange?: (vote: Vote) => void;
 }) {
   const pending = useRef(false);
   const signInDialog = useRef<HTMLDialogElement>(null);
@@ -39,6 +39,7 @@ export function VoteButtons({ postId, initialScore, initialVote, available, isSi
       if (![1, 0, -1].includes(result.vote) || !Number.isSafeInteger(result.score)) throw new Error("Invalid vote response");
       setVote(result.vote);
       setScore(result.score);
+      onVoteChange?.(result.vote);
     } catch {
       setError("Could not save your vote. Please try again.");
     } finally {

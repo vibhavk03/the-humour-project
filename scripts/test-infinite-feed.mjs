@@ -13,7 +13,8 @@ function load(path, imports = {}) {
   new Function("require", "module", "exports", code)(name => Object.hasOwn(imports, name) ? imports[name] : dependency(name), mod, mod.exports);
   return mod.exports;
 }
-const cursorTools = load("app/posts/feed-cursor.ts");
+const feedSort = load("app/posts/feed-sort.ts");
+const cursorTools = load("app/posts/feed-cursor.ts", { "./feed-sort": feedSort });
 const uuid = n => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 const post = n => ({ id: uuid(n), user_id: "owner", image_path: `owner/${n}.gif`, caption: `Caption ${n}`, context: "private context", created_at: "2026-10-20T10:00:00.123456+00:00", score: 2, userVote: 0, votesAvailable: true, signedImageUrl: "/image.gif" });
 const boundary = { ...post(20), crowdPick: false };
@@ -76,6 +77,7 @@ const { GET } = load("app/api/feed/route.ts", {
   "next/headers": { cookies: async () => ({}) },
   "@/app/supabase/server": { createClient: () => ({ auth: { getUser: async () => ({ data: { user }, error: null }) } }) },
   "@/app/posts/feed-cursor": cursorTools,
+  "@/app/posts/feed-sort": feedSort,
   "@/app/posts/feed-data": { getNextFeed: async (_client, _cursor, owner) => { queryCalls++; queriedOwner = owner; return result; } },
 });
 const request = (scope, value = encoded) => new Request(`http://localhost/api/feed?${new URLSearchParams({ scope, cursor: value, userId: "victim" })}`);

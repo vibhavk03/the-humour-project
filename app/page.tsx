@@ -1,24 +1,27 @@
+import { isHomeFeedSort } from "@/app/posts/feed-sort";
 import { cookies } from "next/headers";
 import { LandingPage } from "@/app/landing-page";
 import { createClient } from "@/app/supabase/server";
 import { Feed } from "@/app/posts/feed";
 import { FeedHeader } from "@/app/posts/feed-header";
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ sort?: string | string[] }> }) {
+  const params = await searchParams;
+  const sort = isHomeFeedSort(params.sort) ? params.sort : "all";
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return <LandingPage supabase={supabase} />;
+  if (!user) return <LandingPage supabase={supabase} sort={sort} />;
 
   return (
     <main className="comic-page">
       <section className="mx-auto w-full max-w-7xl space-y-5">
         <FeedHeader supabase={supabase} user={user} title="Home Feed" description="Your daily dose of campus humor." />
         <div id="community-feed" className="scroll-mt-6">
-          <Feed supabase={supabase} userId={user.id} scope="home" />
+          <Feed supabase={supabase} userId={user.id} scope="home" sort={sort} />
         </div>
       </section>
     </main>

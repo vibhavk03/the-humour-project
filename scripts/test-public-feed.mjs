@@ -91,7 +91,8 @@ try {
   global.fetch = fetchBefore;
 }
 
-const feedCursor = load("app/posts/feed-cursor.ts");
+const feedSort = load("app/posts/feed-sort.ts");
+const feedCursor = load("app/posts/feed-cursor.ts", { "./feed-sort": feedSort });
 const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
   "./author-profile": { AuthorProfilePopover: ({ authorName }) => React.createElement("span", null, `By ${authorName || "Campus contributor"}`) },
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
@@ -102,6 +103,7 @@ const { Feed } = load("app/posts/feed.tsx", {
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
   "./feed-cursor": feedCursor,
   "./infinite-feed": { InfiniteFeed },
+  "./feed-filters": { ...feedSort, FeedFilters: () => null },
   "./feed-data": {
     getHomeFeed: async () => ({ posts: [{ id, user_id: "owner", caption: "Public punchline", context: "Private backstory", authorName: "Alex", crowdPick: true, signedImageUrl: "https://example.com/image.gif", created_at: "2026-10-19T12:00:00Z", score: 7, userVote: 0, votesAvailable: true }], hasNext: true, error: false }),
     getUserFeed: async () => { throw new Error("Guests must not query private feeds"); },

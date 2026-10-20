@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPostVotes, type Vote } from "./vote-data";
+import type { HomeFeedSort } from "./feed-filters";
 import type { FeedCursor } from "./feed-cursor";
 
 export const FEED_PAGE_SIZE = 12;
@@ -17,13 +18,22 @@ export type FeedPost = {
   votesAvailable: boolean;
   authorName: string | null;
   crowdPick?: boolean;
+  rankScore?: number;
 };
 
 export async function getUserFeed(supabase: SupabaseClient, userId: string, page: number) {
   return getFeed(supabase, page, userId);
 }
 
-export async function getHomeFeed(supabase: SupabaseClient, page: number) {
+export async function getHomeFeed(supabase: SupabaseClient, page: number, sort: HomeFeedSort = "all") {
+  if (sort !== "all") {
+    const { data, error } = await homeQuery(supabase, sort)
+      .order("created_at", { ascending: false }).order("id", { ascending: false })
+      .range((page - 1) * FEED_PAGE_SIZE, page * FEED_PAGE_SIZE)
+      .returns<Omit<FeedPost, "signedImageUrl" | "score" | "userVote" | "votesAvailable">[]>();
+    if (error) { console.error("Filtered feed unavailable:", error.code); return { posts: [] as FeedPost[], hasNext: false, error: true }; }
+    return hydrateFeed(supabase, data ?? []);
+  }
   return getFeed(supabase, page);
 }
 
@@ -54,14 +64,24 @@ async function getFeed(supabase: SupabaseClient, page: number, userId?: string) 
   return hydrateFeed(supabase, data ?? [], userId);
 }
 
-// Continue chronologically using the initial Crowd Pick, even if votes change.
+function homeQuery(supabase: SupabaseClient, sort: HomeFeedSort) {
+  const table = sort === "top" ? "scored_home_feed" : sort === "unrated" ? "unrated_home_feed" : "home_feed";
+  let query = supabase.from(table).select(`id, user_id, image_path, caption, created_at, authorName:author_name${sort === "top" ? ", rankScore:vote_score" : ""}`);
+  if (sort === "top") query = query.order("vote_score", { ascending: false });
+  return query;
+}
+
 export async function getNextFeed(supabase: SupabaseClient, cursor: FeedCursor, userId?: string) {
-  let query = supabase.from(userId ? "user_feed" : "home_feed")
-    .select(userId ? "id, user_id, image_path, context, caption, created_at, authorName:author_name" : "id, user_id, image_path, caption, created_at, authorName:author_name");
+  const sort = cursor.sort ?? "all";
+  let query = userId ? supabase.from("user_feed").select("id, user_id, image_path, context, caption, created_at, authorName:author_name") : homeQuery(supabase, sort);
   if (userId) query = query.eq("user_id", userId);
-  if (!userId && cursor.pinnedId) query = query.neq("id", cursor.pinnedId);
+  if (!userId && sort === "all" && cursor.pinnedId) query = query.neq("id", cursor.pinnedId);
+  const chronological = `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`;
+  const boundary = !userId && sort === "top"
+    ? `vote_score.lt.${cursor.score},and(vote_score.eq.${cursor.score},created_at.lt.${cursor.createdAt}),and(vote_score.eq.${cursor.score},created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
+    : chronological;
   const { data, error } = await query
-    .or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`)
+    .or(boundary)
     .order("created_at", { ascending: false }).order("id", { ascending: false })
     .range(0, FEED_PAGE_SIZE)
     .returns<Omit<FeedPost, "signedImageUrl" | "score" | "userVote" | "votesAvailable">[]>();
@@ -87,7 +107,8 @@ async function hydrateFeed(supabase: SupabaseClient, rows: Omit<FeedPost, "signe
       authorName: post.authorName ?? null,
       crowdPick: !userId && post.crowdPick === true,
       signedImageUrl: urls.get(post.image_path) || null,
-      score: Number(votes?.get(post.id)?.score ?? 0),
+      score: Number(votes?.get(post.id)?.score ?? post.rankScore ?? 0),
+      ...(post.rankScore !== undefined ? { rankScore: Number(post.rankScore) } : {}),
       userVote: votes?.get(post.id)?.user_vote ?? 0,
       votesAvailable: votes !== null && votes.has(post.id),
     })),
