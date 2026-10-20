@@ -143,14 +143,40 @@ Site URL: http://localhost:3000
 Additional Redirect URLs: http://localhost:3000/auth/callback
 ```
 
-For production, add your Vercel URL:
+For this production deployment, set **Site URL** to:
 
 ```txt
-Site URL: https://your-vercel-domain.vercel.app
-Additional Redirect URLs: https://your-vercel-domain.vercel.app/auth/callback
+https://the-humour-project.vercel.app
 ```
 
-If you use Vercel preview or commit-specific URLs for submission, add that exact callback URL too.
+Add these **Redirect URLs** in the same Supabase project used by Vercel:
+
+```txt
+https://the-humour-project.vercel.app/auth/callback
+https://the-humour-project.vercel.app/auth/callback**
+http://localhost:3000/auth/callback**
+```
+
+The callback pattern is limited to this exact production host and callback path;
+it also covers `?next=/try`, `?next=/generate`, and encoded feed post anchors.
+The app constructs `redirectTo` from the current browser origin, so preview
+hosts also need their own callback entry. Do not leave the production Site URL
+pointing to localhost. An unallowed callback can fall back to that Site URL,
+which sends the production browser to localhost before our callback can run.
+See [Supabase redirect troubleshooting](https://supabase.com/docs/guides/troubleshooting/why-am-i-being-redirected-to-the-wrong-url-when-using-auth-redirectto-option-_vqIeO)
+and [redirect pattern documentation](https://supabase.com/docs/guides/auth/redirect-urls).
+
+Save the Supabase settings, then start a fresh sign-in from the production site;
+no app redeploy is needed for these dashboard settings. An old OAuth code or
+localhost redirect cannot be reused to restore the production browser session.
+Keep one consistent origin throughout generation and sign-in: the guest review
+and selected caption are bound to cookies on that origin.
+
+The intended production trial flow is **generate → select caption → sign in →
+final preview → Post to feed → community feed**. Authentication never publishes
+by itself; the selected template and caption are restored in preview without a
+new LLM request. Confirm Vercel's Production Supabase URL/key point to the project
+whose URL Configuration you are editing.
 
 ## Google OAuth Setup
 

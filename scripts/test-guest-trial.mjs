@@ -274,8 +274,8 @@ try {
     "@/app/trial/pending-share": pendingShares,
     "@/app/trial/publish-sample": publishing,
   });
-  async function callbackPath(next = "/try") {
-    try { await callback(new Request(`http://localhost/auth/callback?code=test&next=${encodeURIComponent(next)}`)); }
+  async function callbackPath(next = "/try", origin = "http://localhost") {
+    try { await callback(new Request(`${origin}/auth/callback?code=test&next=${encodeURIComponent(next)}`)); }
     catch (error) { if (error instanceof Redirect) return error.path; throw error; }
     assert.fail("Expected OAuth redirect");
   }
@@ -294,6 +294,9 @@ try {
   assert.equal(uploads.length, uploadsBeforeLogin);
   assert.equal(pendingCookie, savedHandoff, "Preview retains the selected meme until confirmation");
   assert.equal(profileReads, 2, "Trial sign-in initializes a default name before preview");
+  assert.equal(await callbackPath("/try", "https://the-humour-project.vercel.app"), "/try/preview", "Production sign-in restores the final preview on the same site");
+  assert.equal(savedPosts.size, postsBeforeCallback, "Production authentication must not publish before confirmation");
+  assert.equal(pendingCookie, savedHandoff, "Production login retains the exact selected meme");
   assert.equal(await callbackPath(), "/try/preview");
   assert.equal(savedPosts.size, postsBeforeCallback, "Replayed callbacks must not publish");
   saveFails = true;
@@ -381,7 +384,10 @@ try {
     "@/app/trial/use-trial-draft": { clearTrialDraft() {} },
     "@/app/supabase/client": { createClient: () => ({ auth: { signInWithOAuth: async options => {
       signInEvents.push("oauth");
-      assert.equal(new URL(options.options.redirectTo).searchParams.get("next"), "/try");
+      const destination = new URL(options.options.redirectTo);
+      assert.equal(destination.origin, global.window.location.origin, "OAuth uses the current site, never a hard-coded localhost origin");
+      assert.equal(destination.pathname, "/auth/callback");
+      assert.equal(destination.searchParams.get("next"), "/try");
       return { error: null };
     } } }) },
   });
@@ -403,6 +409,11 @@ try {
     const blocked = AuthControls({ isSignedIn: false, beforeSignIn: async () => false });
     await React.Children.toArray(blocked.props.children).find(node => node.type === "button").props.onClick();
     assert.deepEqual(signInEvents, ["prepare", "saved", "oauth"], "Failed preparation prevents OAuth");
+    for (const origin of ["https://the-humour-project.vercel.app", "https://humour-preview.vercel.app"]) {
+      global.window.location.origin = origin;
+      const deployedAuth = AuthControls({ isSignedIn: false, returnTo: "/try", beforeSignIn: async () => true });
+      await React.Children.toArray(deployedAuth.props.children).find(node => node.type === "button").props.onClick();
+    }
   } finally {
     if (windowBefore === undefined) delete global.window;
     else global.window = windowBefore;
