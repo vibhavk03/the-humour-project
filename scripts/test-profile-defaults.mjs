@@ -113,6 +113,7 @@ assert.equal((await POST(request("Edited name"))).status, 401);
 
 const fetchBefore = global.fetch;
 let formSaved = false;
+let profileRefreshes = 0;
 global.fetch = async (url, options) => {
   assert.equal(url, "/api/profile");
   assert.equal(options.body.get("first_name"), "sam.student");
@@ -123,10 +124,11 @@ global.fetch = async (url, options) => {
 try {
   const { ProfileForm } = load("app/profile/profile-form.tsx", {
     react: { ...React, useState: initial => [initial, () => {}], useRef: initial => ({ current: initial }) },
-    "next/navigation": { useRouter: () => ({ refresh() {}, push() {} }) },
+    "next/navigation": { useRouter: () => ({ refresh() { profileRefreshes++; }, push() {} }) },
   });
   const form = ProfileForm({ initialProfile: { firstName: "sam.student", lastName: "", signedPhotoUrl: null } });
   await form.props.onSubmit({ preventDefault() {} });
   assert.equal(formSaved, true, "The editor accepts a default first name with no surname");
+  assert.equal(profileRefreshes, 1, "Successful edits refresh the shared layout profile and avatar");
 } finally { global.fetch = fetchBefore; }
 console.log("Passed profile checks: email username defaults, blank/missing profile recovery, preserving edited names/photos, concurrent creation, error recovery, optional surname, authenticated profile editing, and client form validation.");

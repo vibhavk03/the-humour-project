@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { AuthControls } from "./auth-controls";
+import { Avatar } from "@/app/profile/avatar";
 
 export function AccountMenu({ name, email, photoUrl }: { name: string; email: string; photoUrl: string | null }) {
   const details = useRef<HTMLDetailsElement>(null);
@@ -30,10 +31,7 @@ export function AccountMenu({ name, email, photoUrl }: { name: string; email: st
     <details ref={details} className="relative shrink-0">
       <summary ref={summary} aria-label={`Account for ${name}`} className="flex cursor-pointer list-none items-center gap-2 comic-account rounded-full p-1.5 transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink sm:pr-3 [&::-webkit-details-marker]:hidden">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink text-sm font-semibold text-ink">
-          {photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-          ) : name.charAt(0).toUpperCase()}
+          <Avatar photoUrl={photoUrl} initials={name.charAt(0).toUpperCase()} />
         </span>
         <span className="hidden max-w-32 truncate text-sm font-medium sm:block">{name}</span>
         <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" className="hidden h-4 w-4 text-muted sm:block"><path d="m5 8 5 5 5-5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>

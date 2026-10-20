@@ -569,3 +569,22 @@ No database migration or additional environment variables are required.
 
 Run `npm run test:sharing` for access boundaries, guest rendering, metadata,
 preview images, sign-in return paths, native sharing, copying, and fallback checks.
+
+## Account avatar loading
+
+The root layout loads account details once per request and supplies a persistent
+client context to the site header and page banners. Page navigation no longer
+performs separate banner profile lookups or signs a new photo URL. Profile edits
+and photo removal already call `router.refresh()`, which updates the shared
+layout context without retaining stale client state.
+
+Account photos use an authenticated `/api/profile/avatar` endpoint with account
+identity and a hash of the stored photo path in the URL. It returns a cropped
+128-pixel WebP thumbnail (first frame for GIFs), privately cached in the browser
+for one hour. Uploads get a new path and URL; removal falls back to initials.
+The endpoint accepts only the signed-in user's current photo/version and does
+not cache errors. Initials remain visible until the image loads, with fixed
+avatar dimensions to avoid layout shifts. No migration is needed.
+
+Run `npm run test:avatar` and `npm run test:profiles` to verify thumbnail caching,
+account isolation, profile refresh, and upload/removal display behavior.

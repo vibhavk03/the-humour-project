@@ -14,7 +14,7 @@ export default async function YourPostsPage() {
     <main className="comic-page">
       <section className="mx-auto w-full max-w-7xl space-y-5">
         {user ? (
-          <FeedHeader supabase={supabase} user={user} title="Your Posts" description="Your moments. Your punchlines. All your published posts in one place, with optional context just for you." />
+          <FeedHeader title="Your Posts" description="Your moments. Your punchlines. All your published posts in one place, with optional context just for you." />
         ) : (
           <>
             <PageIntro title="Your Posts" eyebrow="Your personal back issues" compact>

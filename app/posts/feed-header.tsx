@@ -1,27 +1,23 @@
+"use client";
+
 import Link from "next/link";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { Navigation } from "@/app/navigation";
-import { defaultFirstName } from "@/app/auth/default-profile";
+import { useAccount } from "@/app/profile/account-provider";
+import { Avatar } from "@/app/profile/avatar";
 
-export async function FeedHeader({ supabase, user, title, description, showCreateAction = true }: {
-  supabase: SupabaseClient; user: Pick<User, "id" | "email">; title: string; description: string; showCreateAction?: boolean;
+export function FeedHeader({ title, description, showCreateAction = true }: {
+  title: string; description: string; showCreateAction?: boolean;
 }) {
-  const { data: profile } = await supabase.from("profiles")
-    .select("first_name, last_name, photo_url").eq("id", user.id)
-    .maybeSingle<{ first_name: string | null; last_name: string | null; photo_url: string | null }>();
-  const firstName = profile?.first_name?.trim() || defaultFirstName(user.email);
-  let photoUrl: string | null = null;
-  if (profile?.photo_url?.startsWith(`${user.id}/`)) {
-    const { data } = await supabase.storage.from("photos").createSignedUrl(profile.photo_url, 60 * 60);
-    photoUrl = data?.signedUrl ?? null;
-  }
-
-  return <AccountPageHeader title={title} description={description} firstName={firstName} lastName={profile?.last_name} photoUrl={photoUrl} showCreateAction={showCreateAction} />;
+  return <AccountPageHeader title={title} description={description} firstName="Campus contributor" photoUrl={null} showCreateAction={showCreateAction} />;
 }
 
 export function AccountPageHeader({ title, description, firstName, lastName, photoUrl, showCreateAction = true }: {
   title: string; description: string; firstName: string; lastName?: string | null; photoUrl: string | null; showCreateAction?: boolean;
 }) {
+  const account = useAccount();
+  firstName = account?.firstName ?? firstName;
+  lastName = account?.lastName ?? lastName;
+  photoUrl = account ? account.photoUrl : photoUrl;
   const fullName = [firstName, lastName?.trim()].filter(Boolean).join(" ");
   const initials = [firstName, lastName?.trim()].filter(Boolean).map(name => name![0]).join("").toUpperCase();
   return (
@@ -30,10 +26,7 @@ export function AccountPageHeader({ title, description, firstName, lastName, pho
         <div className="min-w-0">
           <div className="mb-3 flex items-center gap-3">
             <Link href="/profile" aria-label={`Edit ${fullName}’s profile`} className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ink bg-pink-light text-sm font-bold transition-shadow hover:ring-2 hover:ring-ink/20">
-              {photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoUrl} alt="" width={40} height={40} className="h-full w-full object-cover" />
-              ) : <span aria-hidden="true">{initials}</span>}
+              <Avatar photoUrl={photoUrl} initials={initials} />
             </Link>
             <p className="min-w-0 break-words text-sm font-bold text-forest">Hey, {firstName} <span aria-hidden="true">👋</span></p>
           </div>

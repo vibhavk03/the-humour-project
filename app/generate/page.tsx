@@ -14,8 +14,6 @@ export default async function GeneratePage() {
       <section className="mx-auto w-full max-w-7xl space-y-5">
         {user ? (
           <FeedHeader
-            supabase={supabase}
-            user={user}
             title="Find the punchline"
             description="Choose a meme template or upload your own photo or GIF. Add context if you want, then pick your favorite AI caption."
             showCreateAction={false}

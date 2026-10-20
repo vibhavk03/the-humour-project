@@ -19,7 +19,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   return (
     <main className="comic-page">
       <section className="mx-auto w-full max-w-7xl space-y-5">
-        <FeedHeader supabase={supabase} user={user} title="Home Feed" description="Your daily dose of campus humor." />
+        <FeedHeader title="Home Feed" description="Your daily dose of campus humor." />
         <div id="community-feed" className="scroll-mt-6">
           <Feed supabase={supabase} userId={user.id} scope="home" sort={sort} />
         </div>
