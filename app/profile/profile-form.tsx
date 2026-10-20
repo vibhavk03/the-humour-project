@@ -184,8 +184,8 @@ export function ProfileForm({ initialProfile, returnTo }: ProfileFormProps) {
       onSubmit={handleSubmit}
       className="comic-panel space-y-5 p-5 sm:p-7"
     >
-      <div className="flex items-center gap-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-ink-soft bg-pink-light text-sm text-muted">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ink bg-pink-light text-sm text-muted">
           {photoPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photoPreview} alt="" className="h-full w-full object-cover" />
@@ -193,23 +193,24 @@ export function ProfileForm({ initialProfile, returnTo }: ProfileFormProps) {
             "No photo"
           )}
         </div>
-        <label className="block min-w-0 flex-1 space-y-2 text-sm font-medium text-ink">
-          <span>Photo Optional</span>
+        <label className="block w-full min-w-0 flex-1 space-y-2 text-sm font-medium text-ink">
+          <span>Profile photo <span className="font-normal text-muted">(optional)</span></span>
           <input
             ref={fileInputRef}
             type="file"
             accept={ALLOWED_PHOTO_TYPES.join(",")}
             onChange={handlePhotoChange}
-            className="comic-file block w-full text-sm text-ink"
+            className="comic-file block w-full text-xs text-ink"
           />
+          <span className="block text-xs font-normal text-muted">PNG, JPG, WebP or GIF · up to 5 MB</span>
           {photoPreview ? (
             <button
               type="button"
               onClick={handleDeletePhoto}
               disabled={isDeletingPhoto}
-              className="block text-sm font-medium text-red-600 hover:text-red-700 disabled:cursor-not-allowed disabled:text-red-300"
+              className="block cursor-pointer rounded-sm px-2 py-1 text-xs font-bold text-ink underline underline-offset-4 transition-colors hover:bg-pink-light disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isDeletingPhoto ? "Deleting..." : "Delete Photo"}
+              {isDeletingPhoto ? "Deleting..." : "Remove photo"}
             </button>
           ) : null}
         </label>

@@ -17,7 +17,8 @@
     "prebuild": "npm run sync:memes",
     "test:infinite-feed": "node scripts/test-infinite-feed.mjs",
     "test:authors": "node scripts/test-author-profiles.mjs",
-    "test:votes": "node scripts/test-votes.mjs"
+    "test:votes": "node scripts/test-votes.mjs",
+    "test:delete-dialog": "node scripts/test-delete-dialog.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

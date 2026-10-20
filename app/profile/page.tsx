@@ -1,7 +1,6 @@
 import { defaultFirstName } from "@/app/auth/default-profile";
 import { getFeedReturnPath } from "@/app/auth/return-path";
-import { PageIntro } from "@/app/page-intro";
-import { Navigation } from "@/app/navigation";
+import { AccountPageHeader } from "@/app/posts/feed-header";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/supabase/server";
@@ -49,12 +48,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   return (
     <main className="comic-page">
-      <section className="mx-auto w-full max-w-3xl space-y-6">
-        <PageIntro title="Your Profile" eyebrow="Meet the person behind the panels">
-          Update your name or add an optional profile photo. Every good comic has a main character.
-        </PageIntro>
-
-        <Navigation />
+      <section className="mx-auto w-full max-w-7xl space-y-5">
+        <AccountPageHeader
+          title="Your Profile"
+          description="Update your name and profile photo."
+          firstName={formData.firstName}
+          lastName={formData.lastName}
+          photoUrl={signedPhotoUrl}
+        />
         <ProfileForm initialProfile={formData} returnTo={returnTo === "/" ? undefined : returnTo} />
       </section>
     </main>

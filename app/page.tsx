@@ -1,9 +1,8 @@
-import { PageIntro } from "@/app/page-intro";
 import { cookies } from "next/headers";
-import { Navigation } from "@/app/navigation";
 import { LandingPage } from "@/app/landing-page";
 import { createClient } from "@/app/supabase/server";
 import { Feed } from "@/app/posts/feed";
+import { FeedHeader } from "@/app/posts/feed-header";
 
 export default async function Page() {
   const cookieStore = await cookies();
@@ -17,11 +16,7 @@ export default async function Page() {
   return (
     <main className="comic-page">
       <section className="mx-auto w-full max-w-7xl space-y-5">
-        <PageIntro title="Home Feed" eyebrow="The campus comic · NYC edition" compact>
-          Your daily dose of campus humor.
-        </PageIntro>
-
-        <Navigation />
+        <FeedHeader supabase={supabase} user={user} title="Home Feed" description="Your daily dose of campus humor." />
         <div id="community-feed" className="scroll-mt-6">
           <Feed supabase={supabase} userId={user.id} scope="home" />
         </div>
