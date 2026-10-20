@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/app/supabase/server";
 import { createReview } from "@/app/posts/caption-review";
 import { CaptionError, generateCaption } from "@/app/posts/generate-caption";
+import { CaptionRunError, prepareCaptionRun } from "@/app/posts/caption-run";
 import { getTrialSelection, publishTrialSelection, TrialPublishError } from "@/app/trial/publish-sample";
 import { createPendingShare, PENDING_SHARE_COOKIE, PENDING_SHARE_MAX_AGE } from "@/app/trial/pending-share";
 import { getSample } from "@/app/trial/samples";
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: "Caption generation is not configured yet." }, { status: 503 });
   }
-  let body: { action?: unknown; sampleId?: unknown; previousCaptions?: unknown; caption?: unknown; reviewToken?: unknown };
+  let body: { action?: unknown; sampleId?: unknown; previousCaptions?: unknown; generationToken?: unknown; caption?: unknown; reviewToken?: unknown };
   try {
     if (Number(request.headers.get("content-length")) > 20000) throw new Error();
     const raw = await request.text();
@@ -85,11 +86,13 @@ export async function POST(request: Request) {
         }
         remaining = quota.remaining;
       }
+      const run = prepareCaptionRun(body.generationToken, `guest:${guestId}`, bytes, sample.mimeType);
       const generated = await generateCaption(bytes, sample.mimeType, context, previous);
       return reply({
         captions: generated.captions,
         reviewToken: createReview(generated, `guest:${guestId}`, bytes, sample.mimeType, context),
         remaining,
+        ...run.finish(),
       });
     }
 
@@ -108,6 +111,7 @@ export async function POST(request: Request) {
     response.cookies.delete(PENDING_SHARE_COOKIE);
     return response;
   } catch (error) {
+    if (error instanceof CaptionRunError) return reply({ error: error.message, code: error.status === 429 ? "picture_caption_limit" : "invalid_caption_session", remainingCaptions: error.remainingCaptions }, error.status);
     if (error instanceof TrialPublishError) return reply({ error: error.message }, error.status);
     if (error instanceof CaptionError) {
       return reply({ error: error.message, code: error.code, retryAfterSeconds: error.retryAfterSeconds }, error.status,

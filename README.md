@@ -491,3 +491,27 @@ reapply `post-votes.sql` last if those migrations are replayed.
 Run `npm run test:votes` for endpoint and control behavior, and
 `sh scripts/test-votes.sh` for migration, RLS, score/ranking, and cascade checks in
 an isolated temporary PostgreSQL 18 cluster (`TRIAL_PG_BIN` can override binaries).
+
+## Caption limit per selection
+
+A picture selection can generate **30 captions total**, in ten batches of three,
+in both Generate and the guest trial. The UI shows the remaining allowance and
+disables further generation at the limit; choosing and posting existing captions
+remain available. A failed request does not advance the count.
+
+Selecting another picture starts a fresh run. Returning to a previously selected
+picture also starts a fresh 30-caption run (A → B → A). This is a limit for one
+editing attempt, not a lifetime or daily account quota. Changing only the context
+keeps the current run's allowance. The guest draft preserves the active run over
+refresh/sign-in; selecting a different template clears that template's previous
+choices and starts fresh when it is visited again.
+
+Successful generation returns a signed `generationToken`, binding the count to
+that user/guest and image for 24 hours. Continuations validate the token and stop
+before another LLM request at 30. Tokens are separate from caption review tokens,
+so existing captions still publish normally. Starting a new selection intentionally
+omits the continuation token; this UI session cap is not an abuse/spending quota.
+No database migration or new environment variables are needed.
+
+Run `npm run test:caption-limit`, `npm run test:generate`, and
+`npm run test:guest-trial` for the run limit, reset, preview, and publishing checks.

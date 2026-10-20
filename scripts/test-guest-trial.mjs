@@ -21,6 +21,8 @@ process.env.OPENAI_API_KEY = "trial-test-key";
 try {
   const samples = load("app/trial/samples.ts");
   const validation = load("app/posts/upload-validation.ts");
+  const captionLimits = load("app/posts/caption-limits.ts");
+  const captionRun = load("app/posts/caption-run.ts", { "server-only": {}, "./caption-limits": captionLimits });
   const files = load("app/trial/sample-files.ts", { "server-only": {}, "./samples": samples, "@/app/posts/upload-validation": validation });
   assert.ok(samples.SAMPLES.length > 0);
   const eligibleFiles = fs.readdirSync("memes").filter(filename => /\.(png|jpe?g|webp|gif)$/i.test(filename) && fs.statSync(`memes/${filename}`).size > 0 && fs.statSync(`memes/${filename}`).size <= validation.MAX_IMAGE_BYTES);
@@ -153,6 +155,7 @@ try {
   };
   const trialImports = {
     "@/app/trial/settings": { SAMPLE_TRY_LIMITS_ENABLED: true },
+    "@/app/posts/caption-run": captionRun,
     "next/headers": { cookies: async () => cookieStore },
     "next/cache": { revalidatePath: path => invalidated.push(path) },
     "@/app/supabase/server": { createClient: () => client },

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/app/supabase/server";
 import { createReview, verifyReview } from "@/app/posts/caption-review";
 import { CaptionError, generateCaption } from "@/app/posts/generate-caption";
+import { CaptionRunError, prepareCaptionRun } from "@/app/posts/caption-run";
 import {
   IMAGE_EXTENSIONS,
   MAX_CONTEXT_LENGTH,
@@ -73,9 +74,11 @@ export async function POST(request: Request) {
       }
     }
     try {
+      const run = prepareCaptionRun(formData.get("generationToken"), user.id, bytes, image.type);
       const generated = await generateCaption(bytes, image.type, context, previousCaptions);
-      return NextResponse.json({ captions: generated.captions, reviewToken: createReview(generated, user.id, bytes, image.type, context) });
+      return NextResponse.json({ captions: generated.captions, reviewToken: createReview(generated, user.id, bytes, image.type, context), ...run.finish() });
     } catch (error) {
+      if (error instanceof CaptionRunError) return NextResponse.json({ error: error.message, code: error.status === 429 ? "picture_caption_limit" : "invalid_caption_session", remainingCaptions: error.remainingCaptions }, { status: error.status });
       return NextResponse.json(
         {
           error: error instanceof CaptionError ? error.message : "Caption generation failed. Please try again.",

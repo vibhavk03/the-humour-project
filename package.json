@@ -18,7 +18,8 @@
     "test:infinite-feed": "node scripts/test-infinite-feed.mjs",
     "test:authors": "node scripts/test-author-profiles.mjs",
     "test:votes": "node scripts/test-votes.mjs",
-    "test:delete-dialog": "node scripts/test-delete-dialog.mjs"
+    "test:delete-dialog": "node scripts/test-delete-dialog.mjs",
+    "test:caption-limit": "node scripts/test-picture-caption-limit.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

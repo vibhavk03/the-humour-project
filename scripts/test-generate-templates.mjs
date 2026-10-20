@@ -16,6 +16,7 @@ function load(path, imports = {}) {
 }
 const samples = load("app/trial/samples.ts");
 const validation = load("app/posts/upload-validation.ts");
+const captionLimits = load("app/posts/caption-limits.ts");
 let state = [];
 let refs = [];
 let cursor = 0;
@@ -38,6 +39,7 @@ function Picker() { return null; }
 const navigated = [];
 let refreshed = 0;
 const { UploadForm } = load("app/posts/upload-form.tsx", {
+  "./caption-limits": captionLimits,
   react: mockReact,
   "next/navigation": { useRouter: () => ({ replace: path => navigated.push(path), refresh: () => refreshed++ }) },
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
@@ -127,6 +129,35 @@ try {
   assert.equal(button("Generate captions").props.disabled, true);
   assert.equal(render().some(node => node.type === "input" && node.props.type === "radio"), false);
   assert.ok(render().some(node => node.type === Picker));
+
+  // Each selection gets ten batches. Selecting B then A starts a fresh run.
+  state = []; refs = [];
+  let runCount = 0, runRequests = 0;
+  global.fetch = async (url, options) => {
+    if (url.startsWith("/api/samples/")) {
+      const sample = samples.getSample(url.split("/").at(-1));
+      return new Response(fs.readFileSync(`memes/${sample.filename}`));
+    }
+    assert.equal(url, "/api/posts");
+    if (!options.body.get("generationToken")) runCount = 0;
+    runCount += 3; runRequests++;
+    assert.ok(runCount <= 30);
+    return Response.json({ captions: [1,2,3].map(n => `Run take ${runCount}-${n}`), reviewToken: "review", generationToken: `run-${runCount}`, remainingCaptions: 30-runCount });
+  };
+  await render().find(node => node.type === Picker).props.onSelect("dancing-cat");
+  for (let i=0; i<10; i++) await generate();
+  assert.equal(render().filter(node => node.type === "input" && node.props.type === "radio").length,30);
+  assert.equal(button("Request more captions").props.disabled,true);
+  await generate(); assert.equal(runRequests,10,"A disabled run cannot request an eleventh batch");
+  button("Change template").props.onClick();
+  await render().find(node => node.type === Picker).props.onSelect("confused-cat");
+  assert.equal(button("Generate captions").props.disabled,false);
+  await generate(); assert.equal(runCount,3);
+  button("Change template").props.onClick();
+  await render().find(node => node.type === Picker).props.onSelect("dancing-cat");
+  assert.equal(button("Generate captions").props.disabled,false);
+  await generate(); assert.equal(runCount,3,"Returning to A starts a fresh allowance");
+  assert.equal(render().filter(node => node.type === "input" && node.props.type === "radio").length,3);
 
   // Verify the real gallery filters and paginates the same catalog used by guests.
   state = []; refs = [];

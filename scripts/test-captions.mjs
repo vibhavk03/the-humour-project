@@ -24,6 +24,8 @@ const service = load("app/posts/generate-caption.ts", {
 });
 const review = load("app/posts/caption-review.ts", { "server-only": {} });
 const validation = load("app/posts/upload-validation.ts");
+const captionLimits = load("app/posts/caption-limits.ts");
+const captionRun = load("app/posts/caption-run.ts", { "server-only": {}, "./caption-limits": captionLimits });
 const voteData = load("app/posts/vote-data.ts", { "server-only": {} });
 const { getUserFeed, getHomeFeed } = load("app/posts/feed-data.ts", { "server-only": {}, "./vote-data": voteData });
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -78,6 +80,7 @@ const { POST } = load("app/api/posts/route.ts", {
   "@/app/supabase/server": { createClient: () => client },
   "@/app/posts/generate-caption": service,
   "@/app/posts/caption-review": review,
+  "@/app/posts/caption-run": captionRun,
   "@/app/posts/upload-validation": validation,
 });
 function request(context, fields = {}) {

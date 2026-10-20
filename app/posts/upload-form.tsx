@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CAPTIONS_PER_REQUEST, MAX_CAPTIONS_PER_PICTURE, PICTURE_CAPTION_LIMIT_MESSAGE } from "./caption-limits";
 import { SamplePicker } from "./sample-picker";
 import { getSample } from "@/app/trial/samples";
 import { ACCEPTED_IMAGE_TYPES, MAX_CONTEXT_LENGTH, validateImage } from "./upload-validation";
@@ -28,6 +29,11 @@ export function UploadForm() {
   const [savedCaption, setSavedCaption] = useState<string | null>(null);
   const [savedPreview, setSavedPreview] = useState<string | null>(null);
 
+  const [generationToken, setGenerationToken] = useState<string | null>(null);
+  const [remainingCaptions, setRemainingCaptions] = useState<number | null>(null);
+  const captionAllowance = Math.max(0, Math.min(remainingCaptions ?? MAX_CAPTIONS_PER_PICTURE, MAX_CAPTIONS_PER_PICTURE - choices.length));
+  const generationLimitReached = captionAllowance < CAPTIONS_PER_REQUEST;
+
   useEffect(() => {
     if (preview) return () => URL.revokeObjectURL(preview);
   }, [preview]);
@@ -44,6 +50,8 @@ export function UploadForm() {
     setSource(nextSource);
     setTemplateId(null);
     setShowTemplates(true);
+    setRemainingCaptions(null);
+    setGenerationToken(null);
     setImage(null);
     setPreview(null);
     setChoices([]);
@@ -58,6 +66,8 @@ export function UploadForm() {
     const requestId = ++sampleRequest.current;
     setIsLoadingTemplate(true);
     setTemplateId(id);
+    setRemainingCaptions(null);
+    setGenerationToken(null);
     setImage(null);
     setPreview(null);
     setChoices([]);
@@ -86,6 +96,7 @@ export function UploadForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
+    if (generationLimitReached) { setError(PICTURE_CAPTION_LIMIT_MESSAGE); return; }
     setError("");
     setSuccess("");
     if (!image) {
@@ -107,13 +118,16 @@ export function UploadForm() {
       const body = new FormData();
       body.set("image", image);
       body.set("context", context);
+      if (generationToken) body.set("generationToken", generationToken);
       body.set("previousCaptions", JSON.stringify(choices.slice(-60).map(choice => choice.caption)));
       const response = await fetch("/api/posts", { method: "POST", body });
-      const result = await response.json() as { error?: string; captions?: string[]; reviewToken?: string };
+      const result = await response.json() as { error?: string; captions?: string[]; reviewToken?: string; remainingCaptions?: number; generationToken?: string };
+      if (typeof result.remainingCaptions === "number") setRemainingCaptions(result.remainingCaptions);
       if (!response.ok || !result.captions || !result.reviewToken) {
         setError(result.error ?? "Could not generate captions. Please try again.");
         return;
       }
+      if (result.generationToken) setGenerationToken(result.generationToken);
       const token = result.reviewToken;
       const newChoices = result.captions.map(caption => ({ caption, reviewToken: token }));
       setChoices(current => [...current, ...newChoices.filter(choice => !current.some(previous => previous.caption.toLowerCase() === choice.caption.toLowerCase()))]);
@@ -145,6 +159,8 @@ export function UploadForm() {
       setSuccess(result.message ?? "Posted to the feed.");
       setSavedCaption(choice.caption);
       setSavedPreview(URL.createObjectURL(image));
+      setRemainingCaptions(null);
+      setGenerationToken(null);
       setImage(null);
       setPreview(null);
       setTemplateId(null);
@@ -195,6 +211,8 @@ export function UploadForm() {
             setChoices([]);
             setSelected("");
             setPreview(file && !validationError ? URL.createObjectURL(file) : null);
+            setRemainingCaptions(null);
+            setGenerationToken(null);
             setImage(validationError ? null : file);
           }}
           className="comic-file block w-full text-sm text-ink"
@@ -228,11 +246,12 @@ export function UploadForm() {
       </details>
       {error ? <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
       {success ? <p role="status" className="rounded-md border border-forest bg-green-light px-3 py-2 text-sm text-forest">{success}</p> : null}
+      <p role="status" className="text-xs leading-5 text-muted">{generationLimitReached ? PICTURE_CAPTION_LIMIT_MESSAGE : remainingCaptions === null ? "Up to 30 captions per selection." : `${captionAllowance} of 30 captions remaining for this selection.`}</p>
       {choices.length ? (
         <section aria-label="Review captions" className="space-y-4 border-t border-ink-soft pt-5">
           <fieldset disabled={busy} className="space-y-3">
             <legend className="mb-2 comic-heading text-2xl">Choose your caption</legend>
-            <p className="text-sm text-muted">Pick a favorite, or request three more.</p>
+            <p className="text-sm text-muted">{generationLimitReached ? "Choose your favorite caption to post." : "Pick a favorite, or request three more."}</p>
             {choices.map((choice, index) => (
               <label key={choice.caption} className="comic-choice">
                 <input type="radio" name="caption" value={choice.caption} checked={selected === choice.caption} onChange={() => setSelected(choice.caption)} className="mt-1" />
@@ -244,12 +263,12 @@ export function UploadForm() {
           <p role="status" className="text-sm text-muted">{choices.length} captions available{selected ? ". Ready to post your selection." : ". Select one to post."}</p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={publish} disabled={busy || !selected} className="comic-button comic-button-post">{isPublishing ? "Posting..." : "Post to feed"}</button>
-            <button type="submit" disabled={busy} className="comic-button comic-button-secondary">{isUploading ? "Finding more punchlines..." : "Request more captions"}</button>
+            <button type="submit" disabled={busy || generationLimitReached} className="comic-button comic-button-secondary">{isUploading ? "Finding more punchlines..." : "Request more captions"}</button>
           </div>
         </section>
       ) : (
         <div className="space-y-3">
-          <button type="submit" disabled={busy || !image} className="comic-button">
+          <button type="submit" disabled={busy || !image || generationLimitReached} className="comic-button">
             {isUploading ? "Finding the punchlines..." : "Generate captions"}
           </button>
           <p className="text-xs text-muted">You&apos;ll review the captions before anything is posted.</p>

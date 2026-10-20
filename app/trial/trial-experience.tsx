@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { CAPTIONS_PER_REQUEST, MAX_CAPTIONS_PER_PICTURE, PICTURE_CAPTION_LIMIT_MESSAGE } from "@/app/posts/caption-limits";
 import { SAMPLE_TRY_LIMITS_ENABLED } from "./settings";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -16,6 +16,8 @@ export function TrialExperience({ isSignedIn, shareExpired = false }: { isSigned
   const draft = useTrialDraft();
   const sample = getSample(draft.sampleId) ?? SAMPLES[0];
   const result = draft.results[sample.id] ?? { choices: [], selected: "" };
+  const captionAllowance = Math.max(0, Math.min(result.remainingCaptions ?? MAX_CAPTIONS_PER_PICTURE, MAX_CAPTIONS_PER_PICTURE - result.choices.length));
+  const generationLimitReached = captionAllowance < CAPTIONS_PER_REQUEST;
   const [filter, setFilter] = useState<"all" | "images" | "gifs">("all");
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState<"generate" | "preview" | null>(null);
@@ -27,7 +29,8 @@ export function TrialExperience({ isSignedIn, shareExpired = false }: { isSigned
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function selectSample(id: string) {
-    saveTrialDraft({ ...draft, sampleId: id });
+    if (id === sample.id || pending.current) return;
+    saveTrialDraft({ ...draft, sampleId: id, results: { ...draft.results, [id]: { choices: [], selected: "" } } });
     setError("");
     if (window.matchMedia("(max-width: 1023px)").matches) {
       review.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
@@ -36,16 +39,18 @@ export function TrialExperience({ isSignedIn, shareExpired = false }: { isSigned
 
   async function generate() {
     if (pending.current) return;
+    if (generationLimitReached) { setError(PICTURE_CAPTION_LIMIT_MESSAGE); return; }
     pending.current = true;
     setBusy("generate");
     setError("");
     try {
       const response = await fetch("/api/trial", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "generate", sampleId: sample.id, previousCaptions: result.choices.slice(-60).map(choice => choice.caption) }),
+        body: JSON.stringify({ action: "generate", sampleId: sample.id, generationToken: result.generationToken, previousCaptions: result.choices.slice(-60).map(choice => choice.caption) }),
       });
-      const data = await response.json() as { error?: string; captions?: string[]; reviewToken?: string; remaining?: number };
+      const data = await response.json() as { error?: string; captions?: string[]; reviewToken?: string; remaining?: number; remainingCaptions?: number; generationToken?: string };
       if (!response.ok || !data.captions || !data.reviewToken) {
+        if (typeof data.remainingCaptions === "number") saveTrialDraft({ ...draft, results: { ...draft.results, [sample.id]: { ...result, remainingCaptions: data.remainingCaptions } } });
         setError(data.error ?? "Could not generate captions. Please try again.");
         return;
       }
@@ -53,7 +58,7 @@ export function TrialExperience({ isSignedIn, shareExpired = false }: { isSigned
       const additions: Choice[] = data.captions.map(caption => ({ caption, reviewToken: token }));
       saveTrialDraft({
         ...draft, remaining: data.remaining ?? null,
-        results: { ...draft.results, [sample.id]: { ...result, choices: [...result.choices, ...additions].slice(-60) } },
+        results: { ...draft.results, [sample.id]: { ...result, generationToken: data.generationToken, remainingCaptions: data.remainingCaptions ?? Math.max(0, captionAllowance - additions.length), choices: [...result.choices, ...additions] } },
       });
     } catch {
       setError("Could not reach the caption service. Check your connection and try again.");
@@ -139,7 +144,8 @@ export function TrialExperience({ isSignedIn, shareExpired = false }: { isSigned
           </fieldset>
         ) : null}
         <div className="space-y-3">
-          <button type="button" disabled={Boolean(busy)} onClick={generate} className={`comic-button ${result.choices.length ? "comic-button-secondary" : ""}`}>{busy === "generate" ? "Finding the punchlines…" : result.choices.length ? "Request more captions" : "Generate captions"}</button>
+          <p className="text-xs leading-5 text-muted">{generationLimitReached ? PICTURE_CAPTION_LIMIT_MESSAGE : `${captionAllowance} of 30 captions remaining for this selection.`}</p>
+          <button type="button" disabled={Boolean(busy) || generationLimitReached} onClick={generate} className={`comic-button ${result.choices.length ? "comic-button-secondary" : ""}`}>{busy === "generate" ? "Finding the punchlines…" : result.choices.length ? "Request more captions" : "Generate captions"}</button>
           <p role="status" className="text-xs leading-5 text-muted">{busy === "generate" ? "Finding three different angles. This can take a moment." : SAMPLE_TRY_LIMITS_ENABLED && draft.remaining !== null ? `${draft.remaining} sample ${draft.remaining === 1 ? "try" : "tries"} remaining today.` : "Choose a sample and find your favorite punchline."}</p>
         </div>
         {result.selected ? (
