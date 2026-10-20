@@ -113,6 +113,7 @@ global.IntersectionObserver = class {
   disconnect() { this.observing = false; }
 };
 const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
+  "./share-post-button": { SharePostButton: () => null },
   "./author-profile": { AuthorProfilePopover: ({ authorName }) => React.createElement("span", null, `By ${authorName || "Campus contributor"}`) },
   "next/link": () => null,
   "./vote-buttons": { VoteButtons: () => null },

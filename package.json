@@ -20,7 +20,8 @@
     "test:votes": "node scripts/test-votes.mjs",
     "test:delete-dialog": "node scripts/test-delete-dialog.mjs",
     "test:caption-limit": "node scripts/test-picture-caption-limit.mjs",
-    "test:feed-filters": "node scripts/test-feed-filters.mjs"
+    "test:feed-filters": "node scripts/test-feed-filters.mjs",
+    "test:sharing": "node scripts/test-sharing.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -94,6 +94,7 @@ try {
 const feedSort = load("app/posts/feed-sort.ts");
 const feedCursor = load("app/posts/feed-cursor.ts", { "./feed-sort": feedSort });
 const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
+  "./share-post-button": { SharePostButton: () => null },
   "./author-profile": { AuthorProfilePopover: ({ authorName }) => React.createElement("span", null, `By ${authorName || "Campus contributor"}`) },
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
   "./vote-buttons": { VoteButtons: ({ isSignedIn, initialScore }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} score: ${initialScore}`) },

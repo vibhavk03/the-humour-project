@@ -7,6 +7,7 @@ import type { FeedPost } from "./feed-data";
 import { VoteButtons } from "./vote-buttons";
 import { DeletePostButton } from "./delete-post-button";
 import { AuthorProfilePopover } from "./author-profile";
+import { SharePostButton } from "./share-post-button";
 
 export function InfiniteFeed({ initialPosts, initialCursor, userId, scope, sort = "all" }: {
   initialPosts: FeedPost[]; initialCursor: string | null; userId: string | null; scope: "personal" | "home"; sort?: HomeFeedSort;
@@ -94,11 +95,12 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope, sort 
             </div>
             <p className={post.caption ? "comic-caption" : "text-sm text-muted"}>{post.caption || "This image was saved before caption generation was available."}</p>
             {!isHome && post.context ? <p className="whitespace-pre-wrap break-words text-sm text-muted">{post.context}</p> : null}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
                 {post.caption ? <VoteButtons key={`${post.id}-${post.score}-${post.userVote}`} postId={post.id} initialScore={post.score} initialVote={post.userVote} available={post.votesAvailable} isSignedIn={Boolean(userId)} onVoteChange={vote => { if (sort === "unrated" && vote !== 0) setPosts(current => current.filter(item => item.id !== post.id)); }} /> : null}
               </div>
-              {post.user_id === userId ? <DeletePostButton postId={post.id} onDeleted={() => setPosts(current => current.filter(item => item.id !== post.id))} /> : null}
+              {post.caption ? <SharePostButton postId={post.id} /> : null}
+              {!isHome && post.user_id === userId ? <DeletePostButton postId={post.id} onDeleted={() => setPosts(current => current.filter(item => item.id !== post.id))} /> : null}
             </div>
             <time dateTime={post.created_at} className="block text-xs text-muted">
               {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(post.created_at))}

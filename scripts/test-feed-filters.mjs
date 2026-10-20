@@ -41,6 +41,7 @@ const {getFeedReturnPath}=load("app/auth/return-path.ts");assert.equal(getFeedRe
 let state=[],index=0;
 function VoteStub(){return null;}
 const {InfiniteFeed}=load("app/posts/infinite-feed.tsx",{
+  "./share-post-button": { SharePostButton: () => null },
  "./vote-buttons":{VoteButtons:VoteStub},"./author-profile":{AuthorProfilePopover:()=>null},"./delete-post-button":{DeletePostButton:()=>null},"next/link":()=>null,
  react:{...React,useState(initial){const i=index++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=typeof value==="function"?value(state[i]):value;}];},useRef:initial=>({current:initial}),useEffect(){},useCallback:fn=>fn},
 });

@@ -546,3 +546,26 @@ Run `npm run test:feed-filters`, `npm run test:public-feed`, and
 `npm run test:infinite-feed` for queries, cursors, controls, and access boundaries.
 Run `sh scripts/test-feed-filters.sh` for actual view permissions and per-user
 filter behavior in an isolated PostgreSQL 18 cluster (`TRIAL_PG_BIN` override).
+
+## Public meme sharing
+
+Published meme cards have a Share button. Desktop visitors copy a permanent
+`/posts/<post-id>` link; touch devices with native sharing open their share menu.
+If clipboard access is denied, a selectable link appears for manual copying.
+The link uses the current browser origin, so deployed visitors share deployed URLs.
+
+The public post page works without sign-in and shows the original image/GIF,
+caption, author, and vote score. Voting still requires sign-in and returns to
+the same meme afterward. Only `home_feed` is queried for the post, preserving
+the existing published-only access rules and keeping private context out of the page.
+Missing, deleted, and unpublished posts show an unavailable page.
+
+Open Graph and Twitter metadata use the production domain configured by
+`PUBLIC_SITE_URL` in `app/posts/public-post.ts`. The stable
+`/api/posts/<post-id>/share-image` URL checks public visibility on every request
+and renders a JPEG preview (first frame for GIFs), avoiding expiring storage
+URLs in metadata. Messaging apps control their own preview caching and display.
+No database migration or additional environment variables are required.
+
+Run `npm run test:sharing` for access boundaries, guest rendering, metadata,
+preview images, sign-in return paths, native sharing, copying, and fallback checks.

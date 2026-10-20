@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { AuthControls } from "@/app/auth/auth-controls";
 import type { Vote } from "./vote-data";
 
-export function VoteButtons({ postId, initialScore, initialVote, available, isSignedIn = true, onVoteChange }: {
-  postId: string; initialScore: number; initialVote: Vote; available: boolean; isSignedIn?: boolean; onVoteChange?: (vote: Vote) => void;
+export function VoteButtons({ postId, initialScore, initialVote, available, isSignedIn = true, onVoteChange, returnTo }: {
+  postId: string; initialScore: number; initialVote: Vote; available: boolean; isSignedIn?: boolean; onVoteChange?: (vote: Vote) => void; returnTo?: string;
 }) {
   const pending = useRef(false);
   const signInDialog = useRef<HTMLDialogElement>(null);
@@ -97,7 +97,7 @@ export function VoteButtons({ postId, initialScore, initialVote, available, isSi
           <div className="space-y-5">
             <h2 id={`vote-sign-in-title-${postId}`} className="comic-heading pr-5 text-2xl">Sign in to vote on this post.</h2>
             <p id={`vote-sign-in-description-${postId}`} className="text-sm leading-6 text-muted">Help the best punchlines rise to the top.</p>
-            <AuthControls isSignedIn={false} signInLabel="Continue with Google" returnToPostId={postId} />
+            <AuthControls isSignedIn={false} signInLabel="Continue with Google" returnToPostId={postId} returnTo={returnTo} />
             <button type="button" onClick={() => signInDialog.current?.close()} className="cursor-pointer rounded-sm px-2 py-1 text-xs font-bold underline underline-offset-4 transition-colors hover:bg-pink-light hover:decoration-2 focus-visible:bg-pink-light active:bg-pink">Dismiss</button>
           </div>
         </dialog>
