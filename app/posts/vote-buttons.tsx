@@ -13,10 +13,12 @@ export function VoteButtons({ postId, initialScore, initialVote, available, isSi
   const [score, setScore] = useState(initialScore);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
+  const [pendingDirection, setPendingDirection] = useState<1 | -1>(1);
   const [error, setError] = useState("");
 
   async function castVote(direction: -1 | 1) {
     if (!isSignedIn) {
+      setPendingDirection(direction);
       signInDialog.current?.showModal();
       setShowSignIn(true);
       return;
@@ -96,8 +98,8 @@ export function VoteButtons({ postId, initialScore, initialVote, available, isSi
           ><span aria-hidden="true">×</span></button>
           <div className="space-y-5">
             <h2 id={`vote-sign-in-title-${postId}`} className="comic-heading pr-5 text-2xl">Sign in to vote on this post.</h2>
-            <p id={`vote-sign-in-description-${postId}`} className="text-sm leading-6 text-muted">Help the best punchlines rise to the top.</p>
-            <AuthControls isSignedIn={false} signInLabel="Continue with Google" returnToPostId={postId} returnTo={returnTo} />
+            <p id={`vote-sign-in-description-${postId}`} className="text-sm leading-6 text-muted">Your {pendingDirection === 1 ? "upvote" : "downvote"} will be saved after you sign in.</p>
+            <AuthControls isSignedIn={false} signInLabel="Continue with Google" returnToPostId={postId} returnTo={returnTo} pendingVote={{ postId, vote: pendingDirection }} />
             <button type="button" onClick={() => signInDialog.current?.close()} className="cursor-pointer rounded-sm px-2 py-1 text-xs font-bold underline underline-offset-4 transition-colors hover:bg-pink-light hover:decoration-2 focus-visible:bg-pink-light active:bg-pink">Dismiss</button>
           </div>
         </dialog>

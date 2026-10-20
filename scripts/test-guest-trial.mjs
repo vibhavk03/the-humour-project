@@ -268,6 +268,8 @@ try {
   class Redirect extends Error { constructor(path) { super(path); this.path = path; } }
   const profileDefaults = load("app/auth/default-profile.ts", { "server-only": {} });
   const { GET: callback } = load("app/auth/callback/route.ts", {
+    "@/app/auth/pending-vote": { PENDING_VOTE_COOKIE: "humour_pending_vote", readPendingVote: () => null },
+    "next/cache": { revalidatePath() {} },
     "@/app/auth/default-profile": profileDefaults,
     "@/app/auth/return-path": { getFeedReturnPath },
     "next/headers": { cookies: async () => cookieStore },
@@ -424,6 +426,7 @@ try {
   let logoutError = false;
   let logoutCalls = 0;
   const { POST: signOut } = load("app/api/auth/signout/route.ts", {
+    "@/app/auth/pending-vote": { PENDING_VOTE_COOKIE: "humour_pending_vote" },
     "next/headers": { cookies: async () => ({}) },
     "@/app/supabase/server": { createClient: () => ({ auth: { signOut: async () => {
       logoutCalls++;
@@ -436,6 +439,7 @@ try {
   assert.equal(logoutCalls, 0);
   const loggedOut = await signOut(logoutRequest("http://localhost"));
   assert.equal(loggedOut.status, 200);
+  assert.equal(loggedOut.cookies.get("humour_pending_vote")?.value, "", "Sign-out removes pending votes");
   assert.equal(loggedOut.cookies.get(pendingShares.PENDING_SHARE_COOKIE)?.value, "", "Sign-out removes the pending preview cookie");
   assert.equal(loggedOut.cookies.has(sessions.GUEST_COOKIE), false, "Sign-out must not reset guest usage limits");
   logoutError = true;

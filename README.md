@@ -588,3 +588,28 @@ avatar dimensions to avoid layout shifts. No migration is needed.
 
 Run `npm run test:avatar` and `npm run test:profiles` to verify thumbnail caching,
 account isolation, profile refresh, and upload/removal display behavior.
+
+## Voting after guest sign-in
+
+The guest voting popup remembers the chosen upvote or downvote. Clicking Continue
+with Google first prepares a signed, HTTP-only pending-vote cookie valid for ten
+minutes and includes its random intent ID in the OAuth callback URL. The callback
+applies a vote only after successful authentication and only when that ID matches
+the signed cookie. Unrelated sign-ins, canceled popups, expired/tampered cookies,
+and failed authentication never apply the vote. The callback consumes the cookie;
+sign-out also clears it.
+
+The server verifies that the post is still published and upserts the authenticated
+user's desired vote, so callbacks and existing votes cannot add duplicate points.
+Success returns to the selected post; a write failure opens its public page with
+an explicit Retry vote button. Deleted posts show the existing unavailable page.
+The guest caption sign-in flow still opens its final preview before publishing.
+
+Signing uses `AUTH_ACTION_SECRET` when configured, otherwise the existing
+`OPENAI_API_KEY`; no new environment variable or database migration is required.
+Keep the production Supabase `/auth/callback**` redirect allowlist entry so the
+`next` and `voteIntent` query parameters survive OAuth.
+
+Run `npm run test:pending-vote`, `npm run test:votes`, and
+`npm run test:guest-trial` for the handoff, cancellation, replay, retry, and
+existing caption-preview flows.

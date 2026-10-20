@@ -22,7 +22,8 @@
     "test:caption-limit": "node scripts/test-picture-caption-limit.mjs",
     "test:feed-filters": "node scripts/test-feed-filters.mjs",
     "test:sharing": "node scripts/test-sharing.mjs",
-    "test:avatar": "node scripts/test-avatar.mjs"
+    "test:avatar": "node scripts/test-avatar.mjs",
+    "test:pending-vote": "node scripts/test-pending-vote.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

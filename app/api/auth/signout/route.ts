@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/app/supabase/server";
 import { PENDING_SHARE_COOKIE } from "@/app/trial/pending-share";
+import { PENDING_VOTE_COOKIE } from "@/app/auth/pending-vote";
 
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin) {
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json({ message: "Signed out." });
     response.headers.set("Cache-Control", "no-store");
     response.cookies.delete(PENDING_SHARE_COOKIE);
+    response.cookies.delete(PENDING_VOTE_COOKIE);
     // Retain the guest quota cookie: signing out clears drafts, not usage limits.
     return response;
   } catch {

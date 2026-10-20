@@ -61,6 +61,7 @@ const page = load("app/posts/[id]/page.tsx", {
   "next/navigation": { notFound: () => { throw new Error("NOT_FOUND"); } },
   "@/app/supabase/server": { createClient: () => client },
   "../public-post": publicPost,
+  "../pending-vote-retry": { PendingVoteRetry: () => null },
   "../vote-data": { getPostVotes: async () => new Map([[id, { score: 2, user_vote: 0 }]]) },
   "../vote-buttons": { VoteButtons: VoteStub },
   "../share-post-button": { SharePostButton: () => React.createElement("button", null, "Share") },

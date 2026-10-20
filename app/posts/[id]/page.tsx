@@ -8,8 +8,9 @@ import { getPostVotes } from "../vote-data";
 import { VoteButtons } from "../vote-buttons";
 import { SharePostButton } from "../share-post-button";
 import { AuthorProfilePopover } from "../author-profile";
+import { PendingVoteRetry } from "../pending-vote-retry";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams?: Promise<{ voteRetry?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function PublicPostPage({ params }: Props) {
+export default async function PublicPostPage({ params, searchParams }: Props) {
   const { id } = await params;
   const post = await getPublicPost(id);
   if (!post) notFound();
@@ -35,10 +36,12 @@ export default async function PublicPostPage({ params }: Props) {
     getPostVotes(supabase, [post.id]),
   ]);
   const stats = votes?.get(post.id);
+  const retry = (await searchParams)?.voteRetry;
   return (
     <main className="comic-page">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <Link href="/#community-feed" className="self-start text-sm font-bold underline underline-offset-4 hover:text-muted">← Community feed</Link>
+        {user && (retry === "1" || retry === "-1") ? <PendingVoteRetry postId={post.id} vote={retry === "1" ? 1 : -1} /> : null}
         <article id={`post-${post.id}`} className="comic-panel overflow-hidden">
           {image?.signedUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -48,7 +51,7 @@ export default async function PublicPostPage({ params }: Props) {
             <AuthorProfilePopover authorId={post.user_id} authorName={post.author_name} />
             <h1 className="comic-caption">{post.caption}</h1>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <VoteButtons postId={post.id} initialScore={Number(stats?.score ?? 0)} initialVote={stats?.user_vote ?? 0} available={Boolean(stats)} isSignedIn={Boolean(user)} returnTo={`/posts/${post.id}`} />
+              <VoteButtons key={`${post.id}-${stats?.score}-${stats?.user_vote}`} postId={post.id} initialScore={Number(stats?.score ?? 0)} initialVote={stats?.user_vote ?? 0} available={Boolean(stats)} isSignedIn={Boolean(user)} returnTo={`/posts/${post.id}`} />
               <SharePostButton postId={post.id} />
             </div>
             <time dateTime={post.created_at} className="block text-xs text-muted">{new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(post.created_at))}</time>

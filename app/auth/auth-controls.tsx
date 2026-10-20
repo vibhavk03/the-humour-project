@@ -11,9 +11,10 @@ type AuthControlsProps = {
   returnToPostId?: string;
   returnTo?: string;
   beforeSignIn?: () => boolean | Promise<boolean>;
+  pendingVote?: { postId: string; vote: 1 | -1 };
 };
 
-export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google", returnToPostId, returnTo, beforeSignIn }: AuthControlsProps) {
+export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google", returnToPostId, returnTo, beforeSignIn, pendingVote }: AuthControlsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -36,6 +37,21 @@ export function AuthControls({ isSignedIn, signInLabel = "Sign In with Google", 
       callbackUrl.searchParams.set("next", getFeedReturnPath(returnTo));
     } else if (returnToPostId) {
       callbackUrl.searchParams.set("next", `${window.location.pathname}${window.location.search}#post-${returnToPostId}`);
+    }
+    if (pendingVote) {
+      try {
+        const response = await fetch("/api/auth/pending-vote", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...pendingVote, returnTo: getFeedReturnPath(callbackUrl.searchParams.get("next")) }),
+        });
+        const result = await response.json() as { intentId?: string; error?: string };
+        if (!response.ok || !result.intentId) throw new Error(result.error || "Could not prepare your vote. Please try again.");
+        callbackUrl.searchParams.set("voteIntent", result.intentId);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Could not prepare your vote. Please try again.");
+        setIsLoading(false);
+        return;
+      }
     }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
