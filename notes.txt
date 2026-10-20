@@ -1,0 +1,22 @@
+crowd pick
+generate more captions
+theme
+edit/delete option
+review the post option
+make the meme public or private
+
+sign up/sign in home page ui
+
+funny themeenable gifs
+
+
+add trending or crowd pick
+
+comments
+
+try now (without ai)
+and for viewing, no sign up
+for mutating, we can keep sign up
+
+
+light theme / dark theme

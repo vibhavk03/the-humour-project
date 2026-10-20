@@ -49,8 +49,8 @@ begin
   insert into public.profiles (id, first_name, last_name)
   values (
     new.id,
-    new.raw_user_meta_data ->> 'given_name',
-    new.raw_user_meta_data ->> 'family_name'
+    coalesce(nullif(left(btrim(split_part(coalesce(new.email, ''), '@', 1)), 80), ''), 'Campus contributor'),
+    null
   )
   on conflict (id) do nothing;
 

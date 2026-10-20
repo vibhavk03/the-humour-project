@@ -1,3 +1,4 @@
+import { defaultFirstName } from "@/app/auth/default-profile";
 import { getFeedReturnPath } from "@/app/auth/return-path";
 import { PageIntro } from "@/app/page-intro";
 import { Navigation } from "@/app/navigation";
@@ -41,7 +42,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   }
 
   const formData: ProfileFormData = {
-    firstName: profile?.first_name ?? "",
+    firstName: profile?.first_name?.trim() || defaultFirstName(user.email),
     lastName: profile?.last_name ?? "",
     signedPhotoUrl,
   };
@@ -50,7 +51,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     <main className="comic-page">
       <section className="mx-auto w-full max-w-3xl space-y-6">
         <PageIntro title="Your Profile" eyebrow="Meet the person behind the panels">
-          Add your name and an optional profile photo. Every good comic has a main character.
+          Update your name or add an optional profile photo. Every good comic has a main character.
         </PageIntro>
 
         <Navigation />

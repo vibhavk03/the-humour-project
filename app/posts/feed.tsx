@@ -28,8 +28,13 @@ export async function Feed({ supabase, userId, page, scope = "personal" }: { sup
           <p className="text-sm text-muted">{page === 1 ? (isHome ? "Generate a caption to start the community feed." : "Upload an image and generate a caption. Your saved posts will appear here.") : "Go back to see your earlier posts."}</p>
           {page === 1 ? <Link href="/generate" className="comic-button">Generate a caption</Link> : null}
         </div>
-      ) : <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">{posts.map(post => (
+      ) : <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">{posts.map(post => (
         <article key={post.id} id={`post-${post.id}`} className="comic-panel comic-feed-card scroll-mt-6 min-w-0 overflow-hidden">
+          {isHome && page === 1 && post.crowdPick ? (
+            <div className="border-b-2 border-ink bg-green-light px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-forest">
+              <span aria-hidden="true">★ </span>Crowd Pick <span className="font-normal">· Most liked</span>
+            </div>
+          ) : null}
           {post.signedImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={post.signedImageUrl} alt={(!isHome && post.context) || "Image for this caption"} loading="lazy" className="comic-feed-image w-full bg-pink-light object-contain" />

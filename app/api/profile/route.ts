@@ -19,8 +19,8 @@ function sanitizeName(value: FormDataEntryValue | null) {
   return value.replace(/[\u0000-\u001f\u007f]/g, "").trim().replace(/\s+/g, " ");
 }
 
-function validateName(value: string, label: string) {
-  if (!value) {
+function validateName(value: string, label: string, required = true) {
+  if (required && !value) {
     return `${label} is required.`;
   }
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const firstName = sanitizeName(formData.get("first_name"));
   const lastName = sanitizeName(formData.get("last_name"));
   const firstNameError = validateName(firstName, "First name");
-  const lastNameError = validateName(lastName, "Last name");
+  const lastNameError = validateName(lastName, "Last name", false);
 
   if (firstNameError || lastNameError) {
     return NextResponse.json(
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     {
       id: user.id,
       first_name: firstName,
-      last_name: lastName,
+      last_name: lastName || null,
       photo_url: photoUrl,
       updated_at: new Date().toISOString(),
     },

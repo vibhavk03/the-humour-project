@@ -289,8 +289,12 @@ async function run() {
     { id: "own", user_id: "test-user", image_path: "test-user/own.png", caption: "Own caption", context: "Private context", created_at: "2026-10-05T12:00:00Z" },
     { id: "other", user_id: "another-user", image_path: "another-user/other.png", caption: "Another caption", created_at: "2026-10-05T11:00:00Z" },
   ];
+  ordering.length = 0;
+  feedRows[0].crowdPick = true;
   feed = await getHomeFeed(feedClient, 1);
-  assert.equal(queriedTable, "home_feed", "Community reads must use the restricted view");
+  assert.deepEqual(ordering, [["is_crowd_pick", false], ["created_at", false], ["id", false]]);
+  assert.equal(feed.posts[0].crowdPick, true);
+  assert.equal(queriedTable, "ranked_home_feed", "Community reads must use the restricted ranked view");
   assert.equal(queriedUser, undefined, "Home Feed must not filter to the current user");
   assert.equal(selectedFields.includes("context"), false);
   assert.equal(selectedFields.includes("generation_prompt"), false);
@@ -302,6 +306,13 @@ async function run() {
   assert.equal(queriedTable, "user_feed");
   assert.equal(queriedUser, "test-user");
   assert.equal(feed.posts[0].context, "Private context");
+  assert.equal(feed.posts[0].crowdPick, false, "Personal feeds must never pin the community favorite");
+  const originalReturns = query.returns;
+  query.returns = async () => queriedTable === "ranked_home_feed" ? { data: null, error: { code: "PGRST205" } } : { data: feedRows, error: null };
+  feed = await getHomeFeed(feedClient, 1);
+  assert.equal(queriedTable, "home_feed");
+  assert.equal(feed.error, false, "Missing ranking migration must not break browsing");
+  query.returns = originalReturns;
   heartsError = { code: "missing_migration" };
   feed = await getUserFeed(feedClient, "test-user", 1);
   assert.equal(feed.error, false, "A missing hearts migration must not break the feed");

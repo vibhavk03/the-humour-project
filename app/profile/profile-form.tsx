@@ -32,10 +32,10 @@ export function ProfileForm({ initialProfile, returnTo }: ProfileFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
 
-  function validateName(value: string, label: string) {
+  function validateName(value: string, label: string, required = true) {
     const trimmed = value.trim();
 
-    if (!trimmed) {
+    if (required && !trimmed) {
       return `${label} is required.`;
     }
 
@@ -131,7 +131,7 @@ export function ProfileForm({ initialProfile, returnTo }: ProfileFormProps) {
     setSuccess("");
 
     const firstNameError = validateName(firstName, "First name");
-    const lastNameError = validateName(lastName, "Last name");
+    const lastNameError = validateName(lastName, "Last name", false);
     const photoError = validatePhoto(photo);
     const validationError = firstNameError || lastNameError || photoError;
 
@@ -228,7 +228,7 @@ export function ProfileForm({ initialProfile, returnTo }: ProfileFormProps) {
         </label>
 
         <label className="space-y-2 text-sm font-medium text-ink">
-          <span>Last Name</span>
+          <span>Last Name <span className="font-normal text-muted">(optional)</span></span>
           <input
             value={lastName}
             maxLength={MAX_NAME_LENGTH}

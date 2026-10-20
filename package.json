@@ -8,7 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "test:captions": "node scripts/test-captions.mjs",
-    "test:public-feed": "node scripts/test-public-feed.mjs"
+    "test:public-feed": "node scripts/test-public-feed.mjs",
+    "test:guest-trial": "node scripts/test-guest-trial.mjs",
+    "test:generate": "node scripts/test-generate-templates.mjs",
+    "test:profiles": "node scripts/test-profile-defaults.mjs",
+    "sync:memes": "node scripts/sync-meme-templates.mjs",
+    "predev": "npm run sync:memes",
+    "prebuild": "npm run sync:memes"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

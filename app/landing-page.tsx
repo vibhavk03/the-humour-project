@@ -10,18 +10,18 @@ export function LandingPage({ supabase, page }: { supabase: SupabaseClient; page
           <div>
             <p className="comic-eyebrow">Campus life. Comic relief. NYC edition.</p>
             <h1 id="landing-title" className="comic-heading mb-4 text-3xl leading-tight sm:text-5xl">Your photos. Better punchlines.</h1>
-            <p className="max-w-2xl text-base leading-7 text-muted">Turn everyday photos into memes with AI-generated captions. Choose your favorite punchline and share it with the campus community. Browse the memes below, and sign in when you want to like a post or make your own.</p>
+            <p className="max-w-2xl text-base leading-7 text-muted">Turn photos into memes with AI captions. Choose your favorite punchline and share it with the community.</p>
           </div>
           <div className="flex flex-wrap items-center gap-4 lg:flex-col lg:items-start">
             <a href="#community-feed" className="comic-button">Explore the memes <span aria-hidden="true" className="ml-2">↓</span></a>
-            <Link href="/generate" className="comic-button comic-button-secondary">Create a meme</Link>
+            <Link href="/try" className="comic-button comic-button-secondary">Try it out</Link>
           </div>
         </section>
 
         <section id="community-feed" aria-labelledby="community-title" className="scroll-mt-6 space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 id="community-title" className="comic-heading text-2xl sm:text-3xl">The community feed</h2>
-            <p className="font-mono text-xs text-muted">Fresh punchlines, newest first</p>
+            <p className="font-mono text-xs text-muted">The crowd favorite, then newest first</p>
           </div>
           <Feed supabase={supabase} userId={null} page={page} scope="home" />
         </section>
@@ -29,10 +29,10 @@ export function LandingPage({ supabase, page }: { supabase: SupabaseClient; page
         <section aria-label="How to make a meme" className="comic-panel flex flex-wrap items-center justify-between gap-5 bg-green-light p-5 sm:p-7">
           <div>
             <h2 className="comic-heading text-2xl">Your turn to bring the punchline.</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">Upload a photo. Choose from three AI captions. Share your favorite.</p>
+            <p className="mt-2 text-sm leading-6 text-muted">Upload a photo. Choose from AI-generated captions. Share your favorite.</p>
             <p className="mt-2 text-xs leading-5 text-muted">Nothing is posted until you choose to share. Published photos and captions are visible to everyone; optional context stays private.</p>
           </div>
-          <Link href="/generate" className="comic-button">Create a meme</Link>
+          <Link href="/try" className="comic-button">Create a meme</Link>
         </section>
         <footer className="flex flex-wrap justify-between gap-3 border-t-2 border-ink-soft pt-5 font-mono text-xs text-muted">
           <span>The Humour Project</span><span>Everyone&apos;s camera roll has a story. Find the punchline.</span>

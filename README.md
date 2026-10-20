@@ -52,7 +52,7 @@ The navigation below each page introduction has Home Feed (`/`), Your Posts
 (`/your-posts`), and Generate (`/generate`). The top-right account menu shows the
 user's name/photo and contains their email, Edit Profile, and Sign Out. Home Feed is available to everyone, including signed-out visitors, and shows everyone's
 generated image-caption posts, including older generated posts, newest first.
-Posts are shared only after the user selects a caption and clicks Post to feed. Your Posts shows only the
+Uploads are shared after the user selects a caption and clicks Post to feed. Guest samples are reviewed in a preview after sign-in and shared only through the final Post to feed confirmation. Your Posts shows only the
 current user's uploads, including optional context and older uploads without
 captions. Both feeds have 12 posts per page and one-hour signed image URLs.
 Your own posts show a Delete post option on both feeds, with confirmation before
@@ -180,7 +180,7 @@ The app itself redirects users to:
 /auth/callback
 ```
 
-The callback route exchanges the OAuth code for a Supabase session, checks the profile row, and sends incomplete profiles to `/profile`.
+The callback route exchanges the OAuth code for a Supabase session and ensures the user has a default first name, then continues to the requested page or meme preview. Last name is optional.
 
 ## Run Locally
 
@@ -201,6 +201,7 @@ http://localhost:3000
 npm run lint
 npm run test:captions
 npm run test:public-feed
+npm run test:guest-trial
 npx next build --webpack
 ```
 
@@ -246,3 +247,164 @@ Verify after applying the migration:
   return 401.
 - With two accounts, confirm hearts persist and totals update, personal feeds
   remain owner-only, and only an owner sees/can use Delete post.
+
+## Guest Sample Trial
+
+The landing page’s **Try it out** button opens `/try`. Guests can browse the available
+approved samples from the root `memes/` folder, filter still images/GIFs, select
+one, and request three real AI captions. Gallery thumbnails are lightweight WebP
+first frames; the selected GIF and published post retain the original animation.
+Files above the existing 5 MB image limit are excluded.
+The supplied originals are unchanged. Keep `memes/` in the deployment checkout;
+Next.js output tracing includes it in the sample API routes and preview page bundle.
+
+**Sample-try limits are temporarily disabled** in `app/trial/settings.ts`.
+Generation skips the quota RPC and the remaining-tries message is hidden.
+Set `SAMPLE_TRY_LIMITS_ENABLED` to `true` to restore the limits below.
+
+Before re-enabling limits, run **`supabase/guest-trial.sql`** once in the Supabase SQL Editor. The gallery needs no storage setup. The migration creates
+private budget tables and a reservation RPC; it does not change post/profile
+permissions. If the RPC is unavailable, generation fails closed before any LLM
+request. Existing `OPENAI_API_KEY` and Supabase environment variables are reused;
+no service-role key is needed.
+
+When enabled, the defaults are three generation requests per signed, HTTP-only guest session
+per UTC day and 100 across all app instances per UTC day. Reservations are atomic,
+including concurrent requests, and failed provider attempts still consume a
+reservation. The existing provider can retry a temporary failure up to three
+times inside one generation request. Clearing a visitor cookie can reset their
+session allowance but cannot bypass the shared daily cap. Direct RPC callers can
+consume allowance but cannot reset counters or increase spending limits. The
+shared cap limits cost; it does not provide bot detection or prevent denial of
+trial availability. Adjust or disable the trial in SQL, for example:
+
+```sql
+update public.guest_trial_config
+set daily_limit = 100, session_limit = 3
+where id = true;
+-- daily_limit = 0 disables generation while preserving browsing/review/publishing.
+```
+
+Generation accepts only server-allowlisted sample IDs and bounded caption history,
+never arbitrary uploads or URLs. GIF descriptions accompany the existing
+first-frame vision input. Reviews are signed, expire after 24 hours, and bind the
+captions to the original sample bytes and signed guest session. Guests cannot
+publish. After selecting a caption, **Sign in to preview** first sends the
+selection to `POST /api/trial` with `action: "prepare-share"`. The server validates
+the signed review and stores the exact sample, caption, and review in a compressed,
+signed, HTTP-only cookie valid for one hour. OAuth only starts after this succeeds.
+Session storage retains the gallery and choices as a recovery draft; blocked
+session storage stops the handoff with an explanation.
+
+After verified Google authentication, the callback redirects to `/try/preview`.
+The preview page restores and validates the original template and selected caption
+from the signed pending cookie. It shows the image/GIF, caption, public visibility
+notice, and **Post to feed** / **Back to editing** controls. Neither login nor
+opening/refreshing the preview publishes anything. Only the final **Post to feed**
+click calls the authenticated publish API, clears the pending cookie, and opens
+the feed at that post. Signed-in users also go through **Preview meme** before
+this final confirmation. No additional LLM call is made when previewing/publishing.
+Other sign-in flows retain their existing behavior. An expired preview offers a
+return to the saved editor choices; failed publishing keeps the preview for retry.
+Reviews expire after 24 hours; the preview handoff expires after one hour.
+
+Signing out clears the saved trial choices/selection from session storage and
+client memory, expires the pending preview cookie, and reloads the landing page.
+The guest quota cookie and server-side usage counters remain intact, so signing
+out does not reset the daily generation allowance. Failed sign-out leaves the
+draft intact.
+
+The same signed selection and account derive the same UUID post primary key.
+Existing posts are returned on retry; concurrent requests share the deterministic
+image path and the database primary key prevents duplicate inserts. Image cleanup
+first checks for a committed post so a retry cannot remove a successful post’s image.
+No additional database migration is required for this handoff/idempotency behavior.
+
+Verify after applying the migration: open `/try` signed out, filter/paginate,
+select a GIF, generate captions, select one, and click **Sign in to preview**.
+After sign-in, confirm the correct template/caption appear in preview with no new
+post. Refresh and confirm no post appears. Click **Post to feed** and confirm the
+feed opens at exactly one new post with the same caption and animated image. Verify ownership in Your Posts. Repeated requests for the same
+signed selection must return the same post ID without creating another post.
+A fourth generation request in the same
+UTC day should be rejected while existing choices remain usable. Test quota reset
+and budget changes in a non-production database rather than resetting production
+counters.
+
+`npm run test:guest-trial` checks files, previews, signatures, draft restoration,
+quotas/API errors, guest restrictions, signed selections, publishing, and cleanup
+with mocked provider/database boundaries and no paid calls. On macOS with
+PostgreSQL 18 installed, `sh scripts/test-guest-budget.sh` creates an isolated
+temporary cluster to test migration replay, permissions, per-session/global caps,
+and concurrent reservations. It never connects to the app database. Set
+`TRIAL_PG_BIN` to use a different PostgreSQL installation.
+
+## Crowd Pick
+
+Run **`supabase/crowd-pick.sql`** after `public-feed.sql`, `post-authors.sql`, and
+`post-hearts.sql`. The home feed (signed in and signed out) then pins the globally
+most-liked published post to the first position on page one with a **Crowd Pick**
+badge. Every other post remains newest first. The winner is not repeated later
+in the feed. Ties favor the newer post, then descending post ID. If no published
+post has a heart, there is no Crowd Pick. Your Posts keeps its existing ordering.
+
+The restricted `ranked_home_feed` view ranks all published posts before the app
+applies its 12-post pagination. It exposes the existing public fields and a single
+ranking flag; private context, generation metadata, full profiles, and individual
+heart rows are not exposed. Until the migration is applied, the app falls back to
+the ordinary newest-first public feed and logs the missing setup. Heart changes
+and post deletions already refresh/invalidate the home feed, so the pick updates
+from the current totals. Offset pagination can shift if posts or votes change
+between page requests, as it can when new posts arrive.
+
+Run `sh scripts/test-crowd-pick.sh` with a local PostgreSQL 18 installation
+(`TRIAL_PG_BIN` overrides its location) to verify ranking, ties, zero hearts,
+public/private access, and multi-page ordering in an isolated temporary database.
+
+## Generate: Templates or Your Own Image
+
+Signed-in users can choose **Use a template** or **Upload your own** on `/generate`.
+The template picker uses the same curated images/GIFs as the guest gallery,
+with filters and eight templates per page. Selection downloads the original
+asset into the existing image-review form; GIF animation is preserved. The gallery
+collapses after selection and **Change template** opens it again. Switching sources
+or changing images clears earlier caption choices, and changing context also
+requires fresh captions. Failed template downloads cannot reuse a previous image.
+
+**Add context (optional)** works for templates and uploads. Both use the existing
+authenticated `/api/posts` generation/review/publish flow, including original image
+validation, signed caption selection, private context, and publication only after
+**Post to feed**. A successful post redirects to that post in the community
+feed; failed posts keep the editor and selection available for retry.
+Template selection does not use the guest quota API and needs
+no new SQL or storage setup. Sign-in from Generate returns to Generate (including
+after required profile completion).
+
+Run `npm run test:generate` for template selection, GIF bytes, optional context,
+source switching, gallery filters/pagination, and failed-download recovery checks.
+
+## Default Name for New Accounts
+
+Run **`supabase/default-profile-name.sql`** once after the existing profile setup.
+It updates the new-user trigger so future accounts use the email username (the
+part before `@`, for example `sam.student@example.com` → `sam.student`) as their
+first name, with an empty optional last name, instead of importing Google names.
+Existing names and profile edits are left unchanged. Fresh installations using
+the current `profiles.sql` already include this default.
+
+On sign-in, the app also fills an empty first name or missing profile row using
+this default without overwriting an existing name, surname, or photo. New users
+can continue directly to the feed, Generate, or saved meme preview instead of
+completing a profile form. A profile persistence error offers the profile editor
+as a recovery path. Names remain editable from **Account → Edit Profile**, and
+both client/server validation accept an empty last name while requiring a first
+name and enforcing the existing length limits.
+
+Run `npm run test:profiles` for default initialization, preservation of edited
+names, optional surname validation, and authenticated editing checks.
+
+### Adding meme templates
+
+Add PNG, JPG, WebP, or GIF files up to 5 MB to `memes/`. Run `npm run sync:memes` to update both galleries while the dev server is running. Sync also runs automatically with `npm run dev` and `npm run build`. Invalid or oversized files are skipped with a console message.
+
+Optional labels and scene descriptions live in `app/trial/sample-metadata.json`; existing template IDs should stay stable so saved drafts continue to work. New files receive a filename-based label until curated metadata is added.

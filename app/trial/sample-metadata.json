@@ -1,0 +1,242 @@
+{
+  "Overly_attached_GF.jpg": {
+    "id": "overly-attached",
+    "label": "A little too invested",
+    "description": "A woman staring wide-eyed at the camera with an intense smile."
+  },
+  "TrollFace.jpg": {
+    "id": "troll-face",
+    "label": "Up to no good",
+    "description": "A black-and-white cartoon face with a huge mischievous grin."
+  },
+  "bugs-bunny-yawn.gif": {
+    "id": "bugs-bunny-yawn",
+    "label": "Is it over yet?",
+    "description": "A cartoon gray rabbit yawning with a tired expression."
+  },
+  "chillguy.jpg": {
+    "id": "chill-guy",
+    "label": "Just a chill guy",
+    "description": "A laid-back cartoon dog standing with hands in his pockets, wearing a sweater and sneakers."
+  },
+  "eye-roll.gif": {
+    "id": "eye-roll",
+    "label": "Here we go again",
+    "description": "A suited office worker rolling his eyes with an unimpressed expression."
+  },
+  "kto-kounotoritoken.gif": {
+    "id": "side-eye-kid",
+    "label": "Something feels off",
+    "description": "A young boy holding a cup and glancing sideways with a skeptical expression."
+  },
+  "surprised_pikachu.jpg": {
+    "id": "surprised-pikachu",
+    "label": "Did not see that coming",
+    "description": "A yellow cartoon creature staring ahead with wide eyes and an open mouth."
+  },
+  "tom-and-jerry-heart-eyes.gif": {
+    "id": "tom-heart-eyes",
+    "label": "Love at first sight",
+    "description": "A cartoon gray cat smiling with red heart-shaped eyes."
+  },
+  "sabrina-carpenter-clap-clap.gif": {
+    "id": "sabrina-applause",
+    "label": "A round of applause",
+    "description": "A blonde woman applauding enthusiastically at an awards ceremony."
+  },
+  "beer-time.gif": {
+    "id": "beer-time",
+    "label": "Cheers to that",
+    "description": "A man seated at a restaurant table raising a beer for a toast."
+  },
+  "cheers-cheers-to-that.gif": {
+    "id": "office-cheers",
+    "label": "Office celebration",
+    "description": "A suited office worker raising his glass for a toast."
+  },
+  "cheers-toast.gif": {
+    "id": "champagne-toast",
+    "label": "A classy toast",
+    "description": "A smiling man in a tuxedo raising a champagne glass."
+  },
+  "goodnight-okkurr.gif": {
+    "id": "clever-thinking",
+    "label": "Big brain moment",
+    "description": "A grinning man tapping a finger against his temple."
+  },
+  "handshake-cat-meme.gif": {
+    "id": "handshake-cat",
+    "label": "We have a deal",
+    "description": "A black cat standing upright and reaching a paw toward a person."
+  },
+  "sabrina-carpenter-sabrina.gif": {
+    "id": "sabrina-smile",
+    "label": "Who, me?",
+    "description": "A blonde woman smiling with a finger near her lips."
+  },
+  "shreks-meme.gif": {
+    "id": "shrek-grin",
+    "label": "Feeling mischievous",
+    "description": "A green cartoon ogre leaning forward with a mischievous grin."
+  },
+  "so-good-wink.gif": {
+    "id": "knowing-wink",
+    "label": "You know it",
+    "description": "A dark-haired man in a black jacket looking back and winking."
+  },
+  "theodoros.gif": {
+    "id": "theodoros",
+    "label": "You get it",
+    "description": "A man in a white shirt gesturing toward the viewer."
+  },
+  "tom-and-jerry-sneaky.gif": {
+    "id": "sneaky-tom",
+    "label": "Sneaking away",
+    "description": "A cartoon cat tiptoeing near a doorway."
+  },
+  "600px-Success_Kid.jpg": {
+    "id": "success-kid",
+    "label": "Small victory",
+    "description": "A toddler on a beach clenching a fist in triumph."
+  },
+  "thisisfine.jpg": {
+    "id": "this-is-fine",
+    "label": "Everything is fine",
+    "description": "A cartoon dog calmly sitting in a room engulfed in flames."
+  },
+  "confused.gif": {
+    "id": "confused-cat",
+    "label": "Still processing",
+    "description": "A puzzled white cat with a spinning loading symbol above its head."
+  },
+  "cat_giphy.gif": {
+    "id": "dancing-cat",
+    "label": "Main character energy",
+    "description": "An animated gray cat dancing upright with its paws raised."
+  },
+  "mrbean.jpg": {
+    "id": "mr-bean",
+    "label": "Excuse me?",
+    "description": "A man in a suit looking at the camera with a confused expression."
+  },
+  "crying_cat.jpg": {
+    "id": "crying-cat",
+    "label": "Holding it together",
+    "description": "A teary-eyed cat giving a thumbs-up."
+  },
+  "girlll.webp": {
+    "id": "disaster-girl",
+    "label": "A little chaos",
+    "description": "A girl smiling toward the camera while a building burns behind her."
+  },
+  "surprised_the_office.gif": {
+    "id": "surprised-office",
+    "label": "Plot twist",
+    "description": "An animated office worker reacting with wide eyes and an open mouth."
+  },
+  "600px-SpongeBob_Thinking.jpg": {
+    "id": "thinking-sponge",
+    "label": "Deep in thought",
+    "description": "A cartoon sponge holding a notepad and pencil with a skeptical expression."
+  },
+  "Tai_Lung_Looking_At_Computer.jpg": {
+    "id": "computer-stare",
+    "label": "Screen time",
+    "description": "An animated snow leopard staring at a computer screen."
+  },
+  "cat1.jpg": {
+    "id": "cat-stare",
+    "label": "Caught off guard",
+    "description": "A close-up of a cat looking upward with wide eyes."
+  },
+  "cat2.webp": {
+    "id": "cat-crowd",
+    "label": "Group reaction",
+    "description": "A crowd of wide-eyed cats staring with their mouths open."
+  },
+  "jumping_cat.gif": {
+    "id": "jumping-cat",
+    "label": "Maximum enthusiasm",
+    "description": "An animated cat bouncing and waving its paws."
+  },
+  "disappointed-wriotags.gif": {
+    "id": "disappointed",
+    "label": "Not impressed",
+    "description": "An animated man putting his hands on his hips and looking disappointed."
+  },
+  "wtf-disbelief.gif": {
+    "id": "disbelief",
+    "label": "Wait, what?",
+    "description": "An animated man slowly reacting with confusion and disbelief."
+  },
+  "homelander-disgust-the-boys.gif": {
+    "id": "homelander",
+    "label": "That look",
+    "description": "An animated man in a superhero costume reacting with a tense, disgusted expression."
+  },
+  "600px-Thinking_Baby.jpg": {
+    "id": "thinking-baby",
+    "label": "Big questions",
+    "description": "A black-and-white photo of a baby resting a hand against their chin."
+  },
+  "600px-Thinking_Monkey.jpg": {
+    "id": "thinking-monkey",
+    "label": "Considering my options",
+    "description": "A monkey resting a hand against its mouth in thought."
+  },
+  "600px-Sad_Baby_Monkey.jpg": {
+    "id": "sad-monkey",
+    "label": "A rough day",
+    "description": "A small monkey looking downward with a sad expression."
+  },
+  "600px-The_Hulk_Crying.jpg": {
+    "id": "hulk",
+    "label": "Even heroes need a minute",
+    "description": "A green comic-book superhero hunched over with his head down."
+  },
+  "600px-Squid_Game_Celebration.jpg": {
+    "id": "celebration",
+    "label": "We made it",
+    "description": "A group of people in green tracksuits cheering enthusiastically."
+  },
+  "600px-Willem_Dafoe_Looking_Up.jpg": {
+    "id": "looking-up",
+    "label": "Looking for answers",
+    "description": "A man looking upward in blue evening light."
+  },
+  "600px_giga_chad.jpg": {
+    "id": "confidence",
+    "label": "Unshakable confidence",
+    "description": "A black-and-white portrait of a smiling, bearded man."
+  },
+  "600px-Hand_on_Shoulder.jpg": {
+    "id": "reassurance",
+    "label": "A supportive moment",
+    "description": "An animated man placing a reassuring hand on another person\u2019s shoulder."
+  },
+  "600px-Monster_House_Stare_Reginald.jpg": {
+    "id": "worried-stare",
+    "label": "Something feels off",
+    "description": "An animated man looking worriedly at someone beside him."
+  },
+  "goddd.png": {
+    "id": "glowing",
+    "label": "Ascended",
+    "description": "An overexposed portrait of a smiling man surrounded by a bright glow."
+  },
+  "huh.png": {
+    "id": "question-marks",
+    "label": "So many questions",
+    "description": "A puzzled man surrounded by question marks."
+  },
+  "luffy-funny-angry-luffy-angry-on-robin.gif": {
+    "id": "angry-luffy",
+    "label": "Absolutely not",
+    "description": "An animated cartoon pirate shouting with exaggerated anger."
+  },
+  "peppa-pig-piggy.gif": {
+    "id": "peppa",
+    "label": "Out and about",
+    "description": "An animated pink pig mascot dancing in a shopping mall."
+  }
+}

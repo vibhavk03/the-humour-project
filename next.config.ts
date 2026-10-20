@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingIncludes: {
+    "/api/samples/*": ["./memes/**/*"],
+    "/api/trial": ["./memes/**/*"],
+    "/try/preview": ["./memes/**/*"],
+  },
 };
 
 export default nextConfig;
