@@ -89,8 +89,16 @@ try {
   global.fetch = fetchBefore;
 }
 
+const feedCursor = load("app/posts/feed-cursor.ts");
+const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
+  "next/link": ({ href, children }) => React.createElement("a", { href }, children),
+  "./heart-button": { HeartButton: ({ isSignedIn, initialCount }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} hearts: ${initialCount}`) },
+  "./delete-post-button": { DeletePostButton: () => React.createElement("button", null, "Delete post") },
+});
 const { Feed } = load("app/posts/feed.tsx", {
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
+  "./feed-cursor": feedCursor,
+  "./infinite-feed": { InfiniteFeed },
   "./feed-data": {
     getHomeFeed: async () => ({ posts: [{ id, user_id: "owner", caption: "Public punchline", context: "Private backstory", authorName: "Alex", crowdPick: true, signedImageUrl: "https://example.com/image.gif", created_at: "2026-10-19T12:00:00Z", heartCount: 7, hearted: false, heartsAvailable: true }], hasNext: true, error: false }),
     getUserFeed: async () => { throw new Error("Guests must not query private feeds"); },
@@ -98,15 +106,15 @@ const { Feed } = load("app/posts/feed.tsx", {
   "./heart-button": { HeartButton: ({ isSignedIn, initialCount }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} hearts: ${initialCount}`) },
   "./delete-post-button": { DeletePostButton: () => React.createElement("button", null, "Delete post") },
 });
-const html = renderToStaticMarkup(await Feed({ supabase: {}, userId: null, page: 2, scope: "home" }));
+const html = renderToStaticMarkup(await Feed({ supabase: {}, userId: null, scope: "home" }));
 assert.match(html, /Public punchline/);
 assert.match(html, /guest hearts: 7/);
 assert.match(html, /image.gif/);
-assert.match(html, /href="\/#community-feed"/);
-assert.match(html, /href="\/\?page=3#community-feed"/);
+assert.match(html, /Load more memes/);
+assert.doesNotMatch(html, /Feed pagination|Older posts|Newer posts/);
 assert.doesNotMatch(html, /Private backstory|Delete post|Your post/);
-assert.doesNotMatch(html, /Crowd Pick/, "Do not repeat the featured badge on later pages");
-const firstPageHtml = renderToStaticMarkup(await Feed({ supabase: {}, userId: null, page: 1, scope: "home" }));
+assert.equal((html.match(/Crowd Pick/g) ?? []).length, 1);
+const firstPageHtml = renderToStaticMarkup(await Feed({ supabase: {}, userId: null, scope: "home" }));
 assert.equal((firstPageHtml.match(/Crowd Pick/g) ?? []).length, 1);
-assert.equal(await Feed({ supabase: {}, userId: null, page: 1, scope: "personal" }), null);
-console.log("Passed public feed checks: guest rendering, pagination, private context, ownership controls, sign-in popup, dismissal, no guest writes, and safe post return paths.");
+assert.equal(await Feed({ supabase: {}, userId: null, scope: "personal" }), null);
+console.log("Passed public feed checks: guest rendering, infinite-scroll controls, private context, ownership controls, sign-in popup, dismissal, no guest writes, and safe post return paths.");

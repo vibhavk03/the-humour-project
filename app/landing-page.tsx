@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Feed } from "@/app/posts/feed";
 
-export function LandingPage({ supabase, page }: { supabase: SupabaseClient; page: number }) {
+export function LandingPage({ supabase }: { supabase: SupabaseClient }) {
   return (
     <main className="comic-page">
       <div className="mx-auto w-full max-w-7xl space-y-8">
@@ -23,7 +23,7 @@ export function LandingPage({ supabase, page }: { supabase: SupabaseClient; page
             <h2 id="community-title" className="comic-heading text-2xl sm:text-3xl">The community feed</h2>
             <p className="font-mono text-xs text-muted">The crowd favorite, then newest first</p>
           </div>
-          <Feed supabase={supabase} userId={null} page={page} scope="home" />
+          <Feed supabase={supabase} userId={null} scope="home" />
         </section>
 
         <section aria-label="How to make a meme" className="comic-panel flex flex-wrap items-center justify-between gap-5 bg-green-light p-5 sm:p-7">

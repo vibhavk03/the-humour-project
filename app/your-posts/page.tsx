@@ -5,10 +5,7 @@ import { AuthControls } from "@/app/auth/auth-controls";
 import { createClient } from "@/app/supabase/server";
 import { Feed } from "@/app/posts/feed";
 
-export default async function YourPostsPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
-  const params = await searchParams;
-  const page = typeof params.page === "string" && /^[1-9]\d*$/.test(params.page)
-    ? Math.min(Number(params.page), 10000) : 1;
+export default async function YourPostsPage() {
   const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,7 +17,7 @@ export default async function YourPostsPage({ searchParams }: { searchParams: Pr
         </PageIntro>
 
         <Navigation />
-        {user ? <Feed supabase={supabase} userId={user.id} page={page} /> : (
+        {user ? <Feed supabase={supabase} userId={user.id} /> : (
           <div className="comic-panel space-y-4 p-5 sm:p-7">
             <p className="text-sm text-muted">Sign in with Google to see your posts.</p>
             <AuthControls isSignedIn={false} />

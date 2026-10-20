@@ -343,19 +343,27 @@ and concurrent reservations. It never connects to the app database. Set
 
 Run **`supabase/crowd-pick.sql`** after `public-feed.sql`, `post-authors.sql`, and
 `post-hearts.sql`. The home feed (signed in and signed out) then pins the globally
-most-liked published post to the first position on page one with a **Crowd Pick**
+most-liked published post to the first position with a **Crowd Pick**
 badge. Every other post remains newest first. The winner is not repeated later
 in the feed. Ties favor the newer post, then descending post ID. If no published
 post has a heart, there is no Crowd Pick. Your Posts keeps its existing ordering.
 
 The restricted `ranked_home_feed` view ranks all published posts before the app
-applies its 12-post pagination. It exposes the existing public fields and a single
+loads its initial 12 posts. It exposes the existing public fields and a single
 ranking flag; private context, generation metadata, full profiles, and individual
 heart rows are not exposed. Until the migration is applied, the app falls back to
-the ordinary newest-first public feed and logs the missing setup. Heart changes
-and post deletions already refresh/invalidate the home feed, so the pick updates
-from the current totals. Offset pagination can shift if posts or votes change
-between page requests, as it can when new posts arrive.
+the ordinary newest-first public feed and logs the missing setup.
+
+The community feed and Your Posts automatically load another 12 posts near the
+bottom, with a **Load more memes** fallback and explicit retry after errors.
+`/api/feed` uses a timestamp/ID cursor and excludes the initial Crowd Pick from
+later batches. New posts and deletions do not shift the continuation boundary.
+Likes update locally and deletions remove the card without resetting the loaded
+feed. The Crowd Pick is recalculated when the feed is refreshed. No database
+migration is needed for infinite scroll beyond the existing feed setup.
+
+Run `npm run test:infinite-feed` to check cursor ordering, access controls,
+automatic loading, retries, duplicate prevention, and end-of-feed behavior.
 
 Run `sh scripts/test-crowd-pick.sh` with a local PostgreSQL 18 installation
 (`TRIAL_PG_BIN` overrides its location) to verify ranking, ties, zero hearts,

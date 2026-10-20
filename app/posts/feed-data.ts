@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPostHearts } from "./heart-data";
+import type { FeedCursor } from "./feed-cursor";
 
 export const FEED_PAGE_SIZE = 12;
 export type FeedPost = {
@@ -50,7 +51,28 @@ async function getFeed(supabase: SupabaseClient, page: number, userId?: string) 
     console.error("Feed query failed:", error.code);
     return { posts: [] as FeedPost[], hasNext: false, error: true };
   }
-  const rows = data ?? [];
+  return hydrateFeed(supabase, data ?? [], userId);
+}
+
+// Continue chronologically using the initial Crowd Pick, even if likes change.
+export async function getNextFeed(supabase: SupabaseClient, cursor: FeedCursor, userId?: string) {
+  let query = supabase.from(userId ? "user_feed" : "home_feed")
+    .select(userId ? "id, user_id, image_path, context, caption, created_at, authorName:author_name" : "id, user_id, image_path, caption, created_at, authorName:author_name");
+  if (userId) query = query.eq("user_id", userId);
+  if (!userId && cursor.pinnedId) query = query.neq("id", cursor.pinnedId);
+  const { data, error } = await query
+    .or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`)
+    .order("created_at", { ascending: false }).order("id", { ascending: false })
+    .range(0, FEED_PAGE_SIZE)
+    .returns<Omit<FeedPost, "signedImageUrl" | "heartCount" | "hearted" | "heartsAvailable">[]>();
+  if (error) {
+    console.error("Feed continuation failed:", error.code);
+    return { posts: [] as FeedPost[], hasNext: false, error: true };
+  }
+  return hydrateFeed(supabase, data ?? [], userId);
+}
+
+async function hydrateFeed(supabase: SupabaseClient, rows: Omit<FeedPost, "signedImageUrl" | "heartCount" | "hearted" | "heartsAvailable">[], userId?: string) {
   const visible = rows.slice(0, FEED_PAGE_SIZE);
   if (!visible.length) return { posts: [] as FeedPost[], hasNext: false, error: false };
 

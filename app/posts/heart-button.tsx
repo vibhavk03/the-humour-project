@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthControls } from "@/app/auth/auth-controls";
 
-export function HeartButton({ postId, initialCount, initialHearted, available, isSignedIn = true }: {
-  postId: string; initialCount: number; initialHearted: boolean; available: boolean; isSignedIn?: boolean;
+export function HeartButton({ postId, initialCount, initialHearted, available, isSignedIn = true, refreshOnChange = true }: {
+  postId: string; initialCount: number; initialHearted: boolean; available: boolean; isSignedIn?: boolean; refreshOnChange?: boolean;
 }) {
   const router = useRouter();
   const pending = useRef(false);
@@ -35,7 +35,7 @@ export function HeartButton({ postId, initialCount, initialHearted, available, i
       }
       setHearted(result.hearted);
       setCount(result.count);
-      router.refresh();
+      if (refreshOnChange) router.refresh();
     } catch {
       setError("Could not save your heart. Please try again.");
     } finally {

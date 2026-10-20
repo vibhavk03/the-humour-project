@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function DeletePostButton({ postId }: { postId: string }) {
+export function DeletePostButton({ postId, onDeleted }: { postId: string; onDeleted?: () => void }) {
   const router = useRouter();
   const pending = useRef(false);
   const [confirming, setConfirming] = useState(false);
@@ -24,7 +24,8 @@ export function DeletePostButton({ postId }: { postId: string }) {
         return;
       }
       setDeleted(true);
-      router.refresh();
+      if (onDeleted) onDeleted();
+      else router.refresh();
     } catch {
       setError("Could not delete your post. Check your connection and try again.");
     } finally {
