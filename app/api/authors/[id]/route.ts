@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/app/supabase/server";
+import { avatarVersion } from "@/app/profile/account-data";
 
 type AuthorRow = { first_name: string | null; last_name: string | null; photo_url: string | null };
 
@@ -20,9 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const name = [author.first_name?.trim(), author.last_name?.trim()].filter(Boolean).join(" ") || "Campus contributor";
   let photoUrl: string | null = null;
   if (author.photo_url?.startsWith(`${id}/`) && !author.photo_url.split("/").includes("..")) {
-    const { data, error: photoError } = await supabase.storage.from("photos").createSignedUrl(author.photo_url, 60 * 60);
-    if (photoError) console.error("Author photo unavailable:", photoError.name);
-    photoUrl = data?.signedUrl ?? null;
+    photoUrl = `/api/authors/${id}/photo?v=${avatarVersion(author.photo_url)}`;
   }
   return Response.json({ name, photoUrl }, { headers });
 }

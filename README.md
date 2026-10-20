@@ -613,3 +613,23 @@ Keep the production Supabase `/auth/callback**` redirect allowlist entry so the
 Run `npm run test:pending-vote`, `npm run test:votes`, and
 `npm run test:guest-trial` for the handoff, cancellation, replay, retry, and
 existing caption-preview flows.
+
+## Author popup loading
+
+Author names near the viewport preload their public profile and photo in the
+background. Repeated cards by the same author share the existing five-minute
+profile cache and in-flight request. Pointer entry also begins loading immediately,
+while the popup retains its 150 ms delay to avoid accidental opening. Offscreen
+cards wait until they approach the viewport, and background errors remain retryable.
+
+The public profile endpoint returns a stable, versioned
+`/api/authors/<id>/photo?v=...` URL instead of signing the original photo. That
+endpoint checks the existing `author_profiles` visibility view and current
+owner-prefixed photo path, then serves a 192-pixel WebP thumbnail (first GIF frame).
+The image is privately cached for five minutes and varies by cookie; errors are
+not cached. Photo changes produce a new URL. Existing initials, error feedback,
+keyboard access, and mobile dismissal behavior remain in place.
+
+No new database migration is needed beyond the existing
+`supabase/public-author-profiles.sql`. Run `npm run test:authors` for preloading,
+image caching, thumbnail dimensions, access boundaries, and popup interactions.

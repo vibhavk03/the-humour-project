@@ -1,16 +1,21 @@
 export type AuthorProfile = { name: string; photoUrl: string | null };
 
 // Repeated posts by one author share a request. Failures can be retried.
-const profiles = new Map<string, { expires: number; result: Promise<AuthorProfile> }>();
+const profiles = new Map<string, { expires: number; result: Promise<AuthorProfile>; image?: HTMLImageElement }>();
 export function loadAuthorProfile(id: string): Promise<AuthorProfile> {
   const cached = profiles.get(id);
   if (cached && cached.expires > Date.now()) return cached.result;
-  const entry = {
+  const entry: { expires: number; result: Promise<AuthorProfile>; image?: HTMLImageElement } = {
     expires: Date.now() + 5 * 60 * 1000,
     result: fetch(`/api/authors/${encodeURIComponent(id)}`, { cache: "no-store" }).then(async response => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Profile details are unavailable right now.");
       if (typeof data.name !== "string" || (data.photoUrl !== null && typeof data.photoUrl !== "string")) throw new Error("Profile details are unavailable right now.");
+      if (data.photoUrl && typeof Image !== "undefined") {
+        // Warm the image cache too, rather than waiting for the popup's img mount.
+        entry.image = new Image();
+        entry.image.src = data.photoUrl;
+      }
       return { name: data.name, photoUrl: data.photoUrl };
     }),
   };

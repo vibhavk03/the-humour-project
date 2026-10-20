@@ -76,6 +76,19 @@ export function AuthorProfilePopover({ authorId, authorName }: { authorId: strin
   }, []);
 
   useEffect(() => {
+    const target = button.current;
+    if (!target || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      observer.disconnect();
+      // Background failures remain silent; opening the popup offers the usual retry.
+      void loadAuthorProfile(authorId).catch(() => {});
+    }, { rootMargin: "100px 0px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [authorId]);
+
+  useEffect(() => {
     if (!open) return;
     const dismiss = () => panel.current?.hidePopover();
     window.addEventListener("scroll", dismiss, true);
@@ -90,7 +103,7 @@ export function AuthorProfilePopover({ authorId, authorName }: { authorId: strin
     <div className="min-w-0 text-sm font-bold">
       <span>By </span>
       <button ref={button} type="button" aria-haspopup="dialog" aria-expanded={open} aria-controls={id}
-        onPointerEnter={event => { if (event.pointerType !== "touch") { suppressFocusOpen.current = false; cancelTimers(); hoverTimer.current = setTimeout(show, 150); } }}
+        onPointerEnter={event => { if (event.pointerType !== "touch") { suppressFocusOpen.current = false; cancelTimers(); void fetchProfile(); hoverTimer.current = setTimeout(show, 150); } }}
         onPointerLeave={scheduleClose} onFocus={event => { if (!suppressFocusOpen.current && !panel.current?.contains(event.relatedTarget)) show(); }}
         onBlur={event => { if (!panel.current?.contains(event.relatedTarget)) { suppressFocusOpen.current = false; scheduleClose(); } }}
         onClick={() => { suppressFocusOpen.current = false; show(); }}
