@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FeedPost } from "./feed-data";
 import { HeartButton } from "./heart-button";
 import { DeletePostButton } from "./delete-post-button";
+import { AuthorProfilePopover } from "./author-profile";
 
 export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
   initialPosts: FeedPost[]; initialCursor: string | null; userId: string | null; scope: "personal" | "home";
@@ -87,7 +88,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, userId, scope }: {
           )}
           <div className="space-y-3 border-t-2 border-ink p-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="min-w-0 break-words text-sm font-bold">By {post.authorName || "Campus contributor"}</p>
+              <AuthorProfilePopover authorId={post.user_id} authorName={post.authorName} />
               {post.user_id === userId ? <span className="comic-stamp">Your post</span> : null}
             </div>
             <p className={post.caption ? "comic-caption" : "text-sm text-muted"}>{post.caption || "This image was saved before caption generation was available."}</p>

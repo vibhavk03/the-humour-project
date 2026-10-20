@@ -416,3 +416,24 @@ names, optional surname validation, and authenticated editing checks.
 Add PNG, JPG, WebP, or GIF files up to 5 MB to `memes/`. Run `npm run sync:memes` to update both galleries while the dev server is running. Sync also runs automatically with `npm run dev` and `npm run build`. Invalid or oversized files are skipped with a console message.
 
 Optional labels and scene descriptions live in `app/trial/sample-metadata.json`; existing template IDs should stay stable so saved drafts continue to work. New files receive a filename-based label until curated metadata is added.
+
+## Author profile popovers
+
+Run `supabase/public-author-profiles.sql` in Supabase after `profiles.sql` and
+`posts.sql`. It adds a restricted `author_profiles` view and a read policy for
+only each visible author's current profile photo. Base profiles and the `photos`
+bucket stay private. Published authors' names and photos are visible to guests;
+users without published posts remain visible only to themselves. Removing the
+last published post removes that author's public visibility for new requests.
+Previously issued photo links expire after one hour.
+
+Hover, focus, or tap a feed author's underlined name to see their name and photo.
+The native popover sits above feed cards, stays inside the viewport, and closes
+on Escape, outside click, scrolling, or the close button. Initials cover missing
+photos, and loading failures have a retry button. Profiles load on demand and
+share a five-minute in-browser cache across cards; no email or private context is
+returned by `/api/authors/[id]`.
+
+Run `npm run test:authors` for route, caching, and interaction checks. Run
+`sh scripts/test-author-profiles.sh` for RLS and storage visibility checks in an
+isolated temporary PostgreSQL 18 cluster (`TRIAL_PG_BIN` overrides the binaries).

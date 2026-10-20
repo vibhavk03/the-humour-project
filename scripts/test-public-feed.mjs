@@ -91,6 +91,7 @@ try {
 
 const feedCursor = load("app/posts/feed-cursor.ts");
 const { InfiniteFeed } = load("app/posts/infinite-feed.tsx", {
+  "./author-profile": { AuthorProfilePopover: ({ authorName }) => React.createElement("span", null, `By ${authorName || "Campus contributor"}`) },
   "next/link": ({ href, children }) => React.createElement("a", { href }, children),
   "./heart-button": { HeartButton: ({ isSignedIn, initialCount }) => React.createElement("span", null, `${isSignedIn ? "member" : "guest"} hearts: ${initialCount}`) },
   "./delete-post-button": { DeletePostButton: () => React.createElement("button", null, "Delete post") },
