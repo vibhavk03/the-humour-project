@@ -11,6 +11,7 @@ export function AuthorProfilePopover({ authorId, authorName }: { authorId: strin
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alive = useRef(true);
   const pending = useRef(false);
+  const suppressFocusOpen = useRef(false);
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<AuthorProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,20 +90,30 @@ export function AuthorProfilePopover({ authorId, authorName }: { authorId: strin
     <div className="min-w-0 text-sm font-bold">
       <span>By </span>
       <button ref={button} type="button" aria-haspopup="dialog" aria-expanded={open} aria-controls={id}
-        onPointerEnter={event => { if (event.pointerType !== "touch") { cancelTimers(); hoverTimer.current = setTimeout(show, 150); } }}
-        onPointerLeave={scheduleClose} onFocus={event => { if (!panel.current?.contains(event.relatedTarget)) show(); }}
-        onBlur={event => { if (!panel.current?.contains(event.relatedTarget)) scheduleClose(); }} onClick={show}
+        onPointerEnter={event => { if (event.pointerType !== "touch") { suppressFocusOpen.current = false; cancelTimers(); hoverTimer.current = setTimeout(show, 150); } }}
+        onPointerLeave={scheduleClose} onFocus={event => { if (!suppressFocusOpen.current && !panel.current?.contains(event.relatedTarget)) show(); }}
+        onBlur={event => { if (!panel.current?.contains(event.relatedTarget)) { suppressFocusOpen.current = false; scheduleClose(); } }}
+        onClick={() => { suppressFocusOpen.current = false; show(); }}
         className="cursor-pointer break-words rounded-sm text-left underline decoration-ink/30 underline-offset-4 transition-colors hover:bg-pink-light hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
       >{authorName || "Campus contributor"}</button>
       <div ref={panel} id={id} popover="auto" role="dialog" aria-label={`About ${name}`}
+        onBeforeToggle={event => {
+          if (event.newState === "closed") { suppressFocusOpen.current = true; cancelTimers(); }
+        }}
         onToggle={event => setOpen(event.currentTarget.matches(":popover-open"))}
         onPointerEnter={cancelTimers} onPointerLeave={scheduleClose}
         onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== button.current) scheduleClose(); }}
         style={position}
         className="comic-panel fixed m-0 max-h-[calc(100svh-1.5rem)] w-72 max-w-[calc(100vw-1.5rem)] overflow-y-auto bg-green-light p-5 text-ink"
       >
-        <button type="button" aria-label="Close profile" onClick={() => { close(); button.current?.focus({ preventScroll: true }); }}
-          className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-xl hover:bg-pink-light focus-visible:outline-2 focus-visible:outline-ink">×</button>
+        <button type="button" aria-label="Close profile" onClick={() => {
+          // Mobile browsers may restore focus with relatedTarget=null. Do not
+          // interpret that programmatic focus as a new request to open.
+          suppressFocusOpen.current = true;
+          close();
+          button.current?.focus({ preventScroll: true });
+        }}
+          className="absolute right-1 top-1 z-10 flex h-11 w-11 touch-manipulation cursor-pointer items-center justify-center rounded-sm text-xl hover:bg-pink-light focus-visible:outline-2 focus-visible:outline-ink">×</button>
         <div className="flex flex-col items-center gap-3 pt-4 text-center">
           {profile?.photoUrl && !photoFailed ? (
             // eslint-disable-next-line @next/next/no-img-element

@@ -77,13 +77,14 @@ function elements(node) { return !node || typeof node!=="object" ? [] : [node,..
 function render() { stateIndex=refIndex=0; return elements(AuthorProfilePopover({authorId:id,authorName:"Sam"})); }
 const beforeWindow = global.window;
 global.window={innerWidth:400,innerHeight:800,addEventListener(){},removeEventListener(){}};
-let shown=false,focused=false;
+let shown=false,focused=false,triggerFocusHandler;
 const panel={showPopover(){shown=true;},hidePopover(){shown=false;},contains:target=>target==="inside"};
-const trigger={getBoundingClientRect:()=>({left:350,bottom:730}),focus(){focused=true;}};
+const trigger={getBoundingClientRect:()=>({left:350,bottom:730}),focus(){focused=true;triggerFocusHandler?.({relatedTarget:null});}};
 try {
  let tree=render();
  const button=tree.find(node=>node.type==="button"&&node.props["aria-haspopup"]==="dialog");
  const popover=tree.find(node=>node.props?.popover==="auto");
+ triggerFocusHandler=button.props.onFocus;
  button.props.ref.current=trigger;
  popover.props.ref.current=panel;
  button.props.onFocus({relatedTarget:null});
@@ -108,8 +109,21 @@ try {
  assert.equal(focused,true,"Closing restores keyboard focus");
  button.props.onFocus({relatedTarget:"inside"});
  assert.equal(shown,false,"Restoring focus must not reopen the popover");
+ button.props.onFocus({relatedTarget:null});
+ assert.equal(shown,false,"Mobile focus restoration without relatedTarget must stay dismissed");
+ button.props.onPointerEnter({pointerType:"touch"});
+ assert.equal(shown,false,"Touch pointer entry must not reopen the popup");
+ button.props.onClick();
+ assert.equal(shown,true,"A fresh tap on the author must still reopen the popup");
+ popover.props.onBeforeToggle({newState:"closed"});
+ panel.hidePopover();
+ button.props.onFocus({relatedTarget:null});
+ assert.equal(shown,false,"Outside/Escape dismissal also blocks automatic focus reopening");
+ button.props.onBlur({relatedTarget:null});
+ button.props.onFocus({relatedTarget:null});
+ assert.equal(shown,true,"Returning with keyboard focus after leaving the trigger still works");
 } finally {
  cleanup.forEach(fn=>fn());
  global.window=beforeWindow;
 }
-console.log("Passed author profile checks: restricted lookup, safe photo signing, missing profiles/photos, cache/deduplication, retry, focus/tap opening, responsive positioning, image fallback, and close focus restoration.");
+console.log("Passed author profile checks: restricted lookup, safe photo signing, missing profiles/photos, cache/deduplication, retry, focus/tap opening, responsive positioning, image fallback, mobile null-target focus restoration, touch reopening, native dismissal, and keyboard re-entry.");
