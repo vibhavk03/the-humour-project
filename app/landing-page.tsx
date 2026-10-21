@@ -9,13 +9,13 @@ export function LandingPage({ supabase, sort = "all" }: { supabase: SupabaseClie
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <section className="comic-panel grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-center" aria-labelledby="landing-title">
           <div>
-            <p className="comic-eyebrow">Campus life. Comic relief. NYC edition.</p>
-            <h1 id="landing-title" className="comic-heading mb-4 text-3xl leading-tight sm:text-5xl">Your photos. Better punchlines.</h1>
-            <p className="max-w-2xl text-base leading-7 text-muted">Turn photos into memes with AI captions. Choose your favorite punchline and share it with the community.</p>
+            <p className="comic-eyebrow">COLUMBIA LIFE. NYC HUMOR. POWERED BY AI.</p>
+            <h1 id="landing-title" className="comic-heading mb-4 text-3xl leading-tight sm:text-5xl">TURN YOUR PHOTOS INTO FUNNY MEMES.</h1>
+            <p className="max-w-2xl text-base leading-7 text-muted">Upload a photo or choose a meme template. Let AI generate funny captions inspired by life at Columbia University and in NYC. Pick your favorite and share it with the community.</p>
           </div>
           <div className="flex flex-wrap items-center gap-4 lg:flex-col lg:items-start">
-            <a href="#community-feed" className="comic-button">Explore the memes <span aria-hidden="true" className="ml-2">↓</span></a>
-            <Link href="/try" className="comic-button comic-button-secondary">Try it out</Link>
+            <a href="#community-feed" className="comic-button">Explore community feed <span aria-hidden="true" className="ml-2">↓</span></a>
+            <Link href="/try" className="comic-button comic-button-secondary">Create a meme</Link>
           </div>
         </section>
 

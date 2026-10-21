@@ -24,6 +24,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           firstName={formData.firstName}
           lastName={formData.lastName}
           photoUrl={signedPhotoUrl}
+          showCreateAction={false}
         />
         <ProfileForm initialProfile={formData} returnTo={returnTo === "/" ? undefined : returnTo} />
       </section>

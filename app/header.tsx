@@ -13,7 +13,7 @@ export function Header() {
   return (
     <header className="comic-header px-6 text-ink">
       <HeaderWidth>
-        <Link href="/" className="comic-brand"><span className="block">The Humour Project</span><span className="mt-1 block font-mono text-[0.6rem] font-medium tracking-[0.15em] text-muted">CAMPUS LIFE. COMIC RELIEF.</span></Link>
+        <Link href="/" className="comic-brand"><span className="block">The Humour Project</span><span className="mt-1 block font-mono text-[0.6rem] font-medium tracking-[0.15em] text-muted">FOR THE LOVE OF LAUGHS.</span></Link>
         {account ? <AccountMenu key={account.id} name={name} email={account.email} photoUrl={account.photoUrl} /> : <AuthControls isSignedIn={false} />}
       </HeaderWidth>
     </header>

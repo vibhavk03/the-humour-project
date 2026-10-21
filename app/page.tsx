@@ -19,7 +19,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   return (
     <main className="comic-page">
       <section className="mx-auto w-full max-w-7xl space-y-5">
-        <FeedHeader title="Home Feed" description="Your daily dose of campus humor." />
+        <FeedHeader title="Home Feed" description="Explore the latest posts from the community. Upload a photo or choose a meme template, then generate funny captions with AI. Pick your favorite and post it to the feed!" />
         <div id="community-feed" className="scroll-mt-6">
           <Feed supabase={supabase} userId={user.id} scope="home" sort={sort} />
         </div>

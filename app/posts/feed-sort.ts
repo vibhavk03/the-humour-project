@@ -2,7 +2,7 @@ export const HOME_FEED_FILTERS = [
   { value: "all", label: "All" },
   { value: "newest", label: "Newest first" },
   { value: "top", label: "Top voted" },
-  { value: "unrated", label: "Not rated" },
+  { value: "unrated", label: "Not voted by you" },
 ] as const;
 export type HomeFeedSort = typeof HOME_FEED_FILTERS[number]["value"];
 export function isHomeFeedSort(value: unknown): value is HomeFeedSort {
