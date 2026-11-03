@@ -20,3 +20,23 @@ for mutating, we can keep sign up
 
 
 light theme / dark theme
+
+------
+
+
+is delete option working
+can you create a share link which can be viewed by people who are not even signed in to the app?
+
+can you source images/gifs from the internet with links so peopel can view it?
+when we like and it asks to login, that like should be saved and incremented
+when we sign in but go back, the button still shows working
+
+light mode/ dark mode
+add context on the trial page wihout loging in
+user dp takes time to load when we switch pages
+fix caching? idk
+profile image select box maybe
+add a maximum limit of 30 captions that a user can request per picture
+add humour flavours and edit the prompts so it sees takes the reaction of the image first and not the actual iamge as an input
+for GIFs, it should be playing when we go into the select option
+when we like and it asks to login, that like should be saved and incremented

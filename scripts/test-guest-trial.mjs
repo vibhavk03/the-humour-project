@@ -225,7 +225,7 @@ try {
   Date.now = () => savedNow() + 61 * 60 * 1000;
   assert.equal(pendingShares.readPendingShare(pendingCookie), null);
   Date.now = savedNow;
-  const realPrompt = load("app/posts/caption-prompt.ts");
+  const realPrompt = load("app/posts/caption-prompt.ts", { "./caption-prompt-v2": load("app/posts/caption-prompt-v2.ts") });
   const realAsset = await files.readSample("dancing-cat");
   const fullReview = review.createReview({ ...generatedResult, generation_prompt: realPrompt.CAPTION_PROMPT }, `guest:${sessions.readGuestSession(cookie)}`, realAsset.bytes, realAsset.sample.mimeType, realAsset.sample.description);
   assert.ok(pendingShares.createPendingShare("dancing-cat", captions[0], fullReview).length <= 3800, "The actual production prompt must fit in the handoff cookie");

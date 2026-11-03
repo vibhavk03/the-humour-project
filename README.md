@@ -80,8 +80,12 @@ accepts image inputs. Restart the development server after changing environment
 variables. No new SQL is needed if `supabase/posts.sql` has already been applied;
 older uploads retain null captions.
 
-The prompt in `app/posts/caption-prompt.ts` uses Sam's Columbia/Midwest/NYC persona,
-image-specific observational humor, and a limit of 25 words / 200 characters.
+The active prompt is selected in `app/posts/caption-prompt.ts`. The original is
+preserved in `app/posts/caption-prompt-v1.ts` with its legacy `sam-v2` metadata.
+The Columbia-focused V2 in `app/posts/caption-prompt-v2.ts` uses `columbia-v2`
+metadata so new generations remain distinguishable from older ones. It uses Sam's Columbia student persona,
+requires a meaningful Columbia connection in every image-specific joke, and limits
+captions to 25 words / 200 characters. NYC references must tie back to Columbia life.
 The form displays the latest saved caption next to its image. PNG, JPEG, and WEBP
 and GIF are accepted for caption generation (up to 5 MB). Animated GIFs remain
 animated in previews and feeds. Sharp converts the first frame to PNG for the

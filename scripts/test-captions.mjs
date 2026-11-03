@@ -18,7 +18,8 @@ function load(path, imports = {}) {
   return compiledModule.exports;
 }
 
-const prompt = load("app/posts/caption-prompt.ts");
+const promptV2 = load("app/posts/caption-prompt-v2.ts");
+const prompt = load("app/posts/caption-prompt.ts", { "./caption-prompt-v2": promptV2 });
 const service = load("app/posts/generate-caption.ts", {
   "server-only": {}, "./caption-prompt": prompt,
 });
@@ -269,7 +270,7 @@ async function run() {
   assert.equal(calls, 1);
   assert.deepEqual(generated.captions, captions);
   assert.equal(generated.model, "gpt-4.1-mini-test-snapshot");
-  assert.equal(generated.prompt_version, "sam-v2");
+  assert.equal(generated.prompt_version, "columbia-v2");
   assert.equal(payload.instructions, prompt.CAPTION_PROMPT);
   assert.equal(payload.store, false);
   assert.equal(payload.model, "gpt-4.1-mini");
@@ -349,7 +350,7 @@ async function run() {
   assert.equal(inserted.context, "weekend coffee");
   assert.equal(inserted.user_id, "test-user");
   assert.equal(inserted.generation_prompt, prompt.CAPTION_PROMPT);
-  assert.equal(inserted.prompt_version, "sam-v2");
+  assert.equal(inserted.prompt_version, "columbia-v2");
   assert.ok(inserted.image_path.startsWith("test-user/"));
   const uploadsBeforeInvalid = uploaded;
   for (const invalid of [
